@@ -80,8 +80,7 @@
   <label>¿Qué hace? <span class="opc">(hasta 3)</span></label>
   <div class="chips" id="chips"></div>
 
-  <div id="precios"></div>
-
+  
   <button class="btn" id="btnGuardar" onclick="guardar()">Registrar profesional</button>
   <div class="msg" id="dMsg"></div>
 </div>
@@ -115,7 +114,6 @@
   });
 
   const MAX_PROFS = 3;
-  const PRECIO_MIN = 30000;   // el mismo piso que exige la app al registrarse
   const FALLBACK = ['Electricista','Plomero','Gasista','Pintor','Albañil','Carpintero','Cerrajero',
                     'Jardinero','Limpieza','Encomiendas / Fletes','Aire acondicionado',
                     'Heladeras y lavarropas','Alarmas / Cámaras','Durlock','Herrero'];
@@ -182,24 +180,12 @@
     else {
       if (elegidos.length >= MAX_PROFS) return;
       elegidos.push(oficio); chip.classList.add('on');
-    }
-    pintarPrecios();
-  }
+    }  }
 
-  function pintarPrecios(){
-    const cont = $('precios');
-    if (!elegidos.length) { cont.innerHTML = ''; return; }
-    cont.innerHTML = '<label>Precio mínimo de la visita</label>' +
-      '<div class="hint" style="margin-top:-2px;margin-bottom:6px">Lo que cobra por ir, aunque sea un trabajo chico. Mínimo $' + PRECIO_MIN.toLocaleString('es-AR') + '.</div>';
-    elegidos.forEach((o) => {
-      const fila = document.createElement('div');
-      fila.className = 'precio';
-      const previo = $('p_' + slug(o.name))?.value || '';
-      fila.innerHTML = '<span>' + o.name + '</span>' +
-        '<input id="p_' + slug(o.name) + '" type="tel" inputmode="numeric" placeholder="' + PRECIO_MIN + '" value="' + previo + '">';
-      cont.appendChild(fila);
-    });
-  }
+  // Sin precio: BOLT está en modo gratuito (src/config/monetization.js →
+  // MONETIZATION_MODE = 'free'). No hay visita ni cobro por la app; el cliente
+  // arregla directo con el profesional y sólo paga si le resuelven el problema.
+  // min_price es NOT NULL en la base, así que se guarda en 0.
   const slug = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]/g,'');
 
   // ── Guardar ──────────────────────────────────────────────────────────
@@ -214,15 +200,7 @@
     if (tel.length < 8) { msg.textContent = 'El WhatsApp no parece completo (sin 0 ni 15).'; return; }
     if (!elegidos.length) { msg.textContent = 'Elegí al menos un oficio.'; return; }
 
-    const filas = [];
-    for (const o of elegidos) {
-      const precio = parseInt(($('p_' + slug(o.name))?.value || '').replace(/\D/g,''), 10);
-      if (!precio || precio < PRECIO_MIN) {
-        msg.textContent = 'Poné el precio de ' + o.name + ' (mínimo $' + PRECIO_MIN.toLocaleString('es-AR') + ').';
-        return;
-      }
-      if (o.id) filas.push({ profession_id: o.id, min_price: precio });
-    }
+    const filas = elegidos.filter((o) => o.id).map((o) => ({ profession_id: o.id, min_price: 0 }));
 
     btn.disabled = true; btn.textContent = 'Guardando…';
     msg.style.color = 'var(--muted)'; msg.textContent = 'Registrando…';
