@@ -259,7 +259,31 @@
   // ── Arranque ─────────────────────────────────────────────────────────
   (async () => {
     await cargarOficios();
-    const { data: { session } } = await sb.auth.getSession();
+
+    // Arrancar SIEMPRE sin sesión, salvo que estemos volviendo de Google.
+    // El navegador guarda la sesión del alta anterior, así que al abrir esta
+    // página aparecía el formulario ya cargado con esa cuenta y el alta se le
+    // hacía a la persona equivocada (le pasó a Maxi con la suya el 29-jul).
+    const volvimosDeGoogle = new URL(location.href).searchParams.has('code')
+                          || /access_token=/.test(location.hash);
+    if (!volvimosDeGoogle) {
+      try {
+        const { data: { session: previa } } = await sb.auth.getSession();
+        if (previa) await sb.auth.signOut();
+      } catch (e) {}
+      vista('vGoogle');
+      return;
+    }
+
+    // El intercambio del ?code= por la sesión es asincrónico: preguntando una
+    // sola vez se puede llegar antes de que termine y mandar de vuelta al login
+    // a alguien que ya entró. Hasta ~5s de margen.
+    let session = null;
+    for (let i = 0; i < 12; i++) {
+      try { ({ data: { session } } = await sb.auth.getSession()); } catch (e) {}
+      if (session) break;
+      await new Promise(r => setTimeout(r, 400));
+    }
     if (!session) { vista('vGoogle'); return; }
     usuario = session.user;
 
