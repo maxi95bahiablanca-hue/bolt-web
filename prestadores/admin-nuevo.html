@@ -650,10 +650,14 @@ function tarjetaPrestador(x){
     <dl class="datos">
       <dt>Mail</dt><dd>${l?.email ? `<a href="mailto:${esc(l.email)}">${esc(l.email)}</a>` : '<span class="falta">no figura</span>'}</dd>
       <dt>WhatsApp</dt><dd>${telMostrar ? esc(telMostrar) : '<span class="falta">no figura</span>'}</dd>
-      <dt>Tiene la app</dt><dd>${(() => {
+      <dt>Avisos</dt><dd>${(() => {
+        // ⚠️ El token de push NO prueba que tenga la app: prueba que aceptó las
+        // NOTIFICACIONES. José la tiene instalada, la usa y es tester, y no
+        // tiene token — se salteó ese permiso (Maxi, 1-ago). Decir "no la bajó"
+        // era afirmar algo falso sobre una persona.
         const t = p?.user_id ? TOKENS[p.user_id] : null;
-        if (t) return `✅ sí — la abrió ${desde(t.updated_at)}`;
-        if (p) return '<span class="falta">NO la bajó — sólo entró por la web</span>';
+        if (t) return `✅ le llegan — última vez ${desde(t.updated_at)}`;
+        if (p) return '<span class="falta">no le llegan avisos — falta el permiso de notificaciones</span>';
         return '<span class="falta">todavía no entró</span>';
       })()}</dd>
       <dt>Trabajos</dt><dd>${p ? `${p.completed_jobs || 0} hechos · ⭐ ${p.avg_rating ? Number(p.avg_rating).toFixed(1) : '—'}${p.anios_oficio ? ` · ${p.anios_oficio} años de oficio` : ''}` : '—'}</dd>
