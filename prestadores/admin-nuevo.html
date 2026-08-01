@@ -175,7 +175,22 @@
          padding:11px 18px;font-size:.85rem;box-shadow:0 10px 34px #000a;display:none}
   .toast.ok{border-color:#00D68F44;color:var(--ok)} .toast.bad{border-color:#FF453A44;color:var(--bad)}
   .leaflet-container{background:#0d0d0d}
-  @media(max-width:640px){ .hwrap{padding:11px 14px} main{padding:16px 14px 60px} .grid{grid-template-columns:1fr} }
+  /* En el celular las solapas se envolvían y quedaban salteadas alrededor del
+     logo (captura de Maxi, 1-ago). Ahora el logo va en su propia fila y las
+     solapas quedan en una tira que se desliza, todas alineadas. */
+  @media(max-width:700px){
+    .hwrap{padding:10px 14px;flex-wrap:wrap;gap:10px}
+    .logo{font-size:1rem}
+    .salir{margin-left:auto;order:2}
+    .tabs{order:3;width:100%;margin-left:0;flex-wrap:nowrap;overflow-x:auto;
+          gap:6px;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    .tabs::-webkit-scrollbar{display:none}
+    .tab{flex:none;font-size:.8rem;padding:7px 13px}
+    main{padding:16px 14px 60px}
+    .grid{grid-template-columns:1fr}
+    .kpis{grid-template-columns:repeat(2,1fr);gap:9px}
+    .kpi b{font-size:1.5rem}
+  }
 </style>
 </head>
 <body>
@@ -328,7 +343,11 @@ function irA(vista){
 
 // ── Carga ────────────────────────────────────────────────────────────────
 async function cargarTodo(){
-  await Promise.all([cargarCatalogo(), cargarLeads(), cargarProfesionales(), cargarTrabajos(), cargarClientes()]);
+  // ⚠️ cargarClientes() arma la lista A PARTIR de los trabajos, así que NO puede
+  // ir en el mismo Promise.all: se ejecutaba con TRABAJOS todavía vacío y el
+  // panel mostraba "Clientes: 0" teniendo trabajos en curso (1-ago-2026).
+  await Promise.all([cargarCatalogo(), cargarLeads(), cargarProfesionales(), cargarTrabajos()]);
+  await cargarClientes();
   cargarTrabados();
   pintarKpis(); render(); renderClientes(); renderTrabajos(); pintarMetricas();
 }
@@ -423,14 +442,18 @@ async function cargarTrabados(){
 
 // ── KPIs ─────────────────────────────────────────────────────────────────
 function pintarKpis(){
+  const total = personas().length;           // profesionales reales + leads sueltos
   const aprobados = PROFS.filter(p => p.verification_status === 'approved').length;
   const disponibles = PROFS.filter(p => p.available).length;
   const pendientes = LEADS.filter(l => (l.estado || 'pendiente') === 'pendiente').length;
+  const enApp = PROFS.length;                // los que llegaron a instalar la app
   const enCurso = TRABAJOS.filter(j => ['pending','accepted','arrived','in_progress'].includes(j.status)).length;
   // Los KPIs no son sólo números: tocarlos lleva a lo que cuentan.
   $('kpis').innerHTML = [
+    ['Trabajadores en total', total, false, "verTodos()"],
     ['Disponibles ahora', disponibles, true,  "verRadar()"],
     ['Aprobados',         aprobados,   false, "irA('prestadores')"],
+    ['En la app',         enApp,       false, "irA('prestadores')"],
     ['Por revisar',       pendientes,  false, "verPendientes()"],
     ['Trabajos en curso', enCurso,     false, "irA('trabajos')"],
     ['Trabados',          TRABADOS.length, false, "irA('trabajos')"],
@@ -470,6 +493,14 @@ function alternarRadar(){
 function verRadar(){
   irA('prestadores');
   if (!soloRadar) alternarRadar();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+/** Saca todos los filtros y muestra el listado completo. */
+function verTodos(){
+  irA('prestadores');
+  if (soloRadar) alternarRadar();
+  $('fEstado').value = ''; $('fProf').value = ''; $('fCiudad').value = ''; $('fBuscar').value = '';
+  render();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function verPendientes(){
