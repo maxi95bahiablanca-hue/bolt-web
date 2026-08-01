@@ -37,7 +37,12 @@
     --y:#FFD600; --y-soft:#FFE566; --y-deep:#C9A800;
     --y-dim:#FFD6001a; --y-glow:#FFD60055;
     --tx:#F5F2EC; --mut:#A8A196; --mut2:#6E675C;
-    --ok:#00D68F; --warn:#FF9F0A; --bad:#FF453A; --info:#5AC8FA;
+    /* TRES COLORES Y NADA MÁS (Maxi, 1-ago: "estoy viendo 6 colores y quiero
+       que sean tres"). Negro cálido, amarillo y blanco/gris. Lo que antes
+       distinguía un verde de un rojo ahora lo distingue la INTENSIDAD:
+       amarillo lleno = activo · amarillo apagado = a la espera · gris = frenado.
+       Se leen igual de rápido y el panel deja de parecer un semáforo. */
+    --ok:var(--y); --warn:var(--y-deep); --bad:var(--mut2); --info:var(--y-soft);
   }
   body{background:var(--bg);color:var(--tx);font-family:Inter,system-ui,sans-serif;
        font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
@@ -60,7 +65,7 @@
   .tab.on{background:var(--y);color:#000;box-shadow:0 0 16px var(--y-glow)}
   .salir{padding:7px 12px;border-radius:9px;border:1px solid var(--line2);background:transparent;
          color:var(--mut);font:inherit;font-size:.8rem;cursor:pointer}
-  .salir:hover{color:var(--bad);border-color:#5a2020}
+  .salir:hover{color:var(--tx);border-color:var(--line2)}
 
   main{max-width:1240px;margin:0 auto;padding:22px 20px 70px}
 
@@ -120,9 +125,11 @@
   .chip.gris{background:var(--surf3);color:var(--mut);border-color:var(--line2);font-weight:600}
   .est{margin-left:auto;font-size:.68rem;font-weight:700;padding:4px 9px;border-radius:20px;
        text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;flex:none}
-  .est.ok{background:#00D68F1a;color:var(--ok);border:1px solid #00D68F33}
-  .est.pend{background:#FF9F0A1a;color:var(--warn);border:1px solid #FF9F0A33}
-  .est.no{background:#FF453A1a;color:var(--bad);border:1px solid #FF453A33}
+  /* Aceptado: amarillo lleno. Pendiente: amarillo apagado, sólo contorno.
+     Rechazado/frenado: gris, se apaga solo. */
+  .est.ok{background:var(--y);color:#000;border:1px solid var(--y);box-shadow:0 0 14px var(--y-glow)}
+  .est.pend{background:transparent;color:var(--y-deep);border:1px solid #6b5a1e}
+  .est.no{background:var(--surf3);color:var(--mut2);border:1px solid var(--line2);text-decoration:line-through}
   .est.mut{background:var(--surf3);color:var(--mut2);border:1px solid var(--line2)}
 
   /* Datos en dos columnas, alineados */
@@ -130,8 +137,8 @@
          padding:11px 0;border-top:1px solid var(--line);margin-top:2px}
   .datos dt{color:var(--mut2);font-weight:500}
   .datos dd{color:var(--tx);overflow:hidden;text-overflow:ellipsis}
-  .datos dd.falta{color:var(--bad);font-style:italic}
-  .datos a{color:var(--info);text-decoration:none}
+  .datos dd.falta{color:var(--y-deep);font-style:italic}
+  .datos a{color:var(--y-soft);text-decoration:none;border-bottom:1px solid #55491f}
 
   .mapa-mini{height:110px;border-radius:11px;overflow:hidden;border:1px solid var(--line);
              margin:10px 0 2px;background:var(--surf3)}
@@ -144,9 +151,13 @@
   .b:hover{border-color:#3a3a3a;background:#242424}
   .b.pri{background:var(--y);color:#000;border-color:var(--y);box-shadow:0 0 16px var(--y-glow)}
   .b.pri:hover{background:#ffdf33}
-  .b.wa{color:var(--ok);border-color:#00D68F33}
-  .b.mail{color:var(--info);border-color:#5AC8FA33}
-  .b.del{color:var(--bad);border-color:#FF453A33;margin-left:auto}
+  /* Los botones ya no se distinguen por color sino por peso: el principal es
+     amarillo lleno, los normales grises, y el de borrar queda apagado y
+     apartado a la derecha — cuando se pasa el mouse recién ahí avisa. */
+  .b.wa{color:var(--y-soft);border-color:#55491f}
+  .b.mail{color:var(--y-soft);border-color:#55491f}
+  .b.del{color:var(--mut2);border-color:var(--line);margin-left:auto}
+  .b.del:hover{color:var(--tx);border-color:#6b5a1e;background:#2a2416}
   .b:disabled{opacity:.45;cursor:default}
 
   .vacio{text-align:center;padding:50px 20px;color:var(--mut2)}
@@ -173,7 +184,7 @@
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:99;
          background:var(--surf3);border:1px solid var(--line2);border-radius:11px;
          padding:11px 18px;font-size:.85rem;box-shadow:0 10px 34px #000a;display:none}
-  .toast.ok{border-color:#00D68F44;color:var(--ok)} .toast.bad{border-color:#FF453A44;color:var(--bad)}
+  .toast.ok{border-color:#FFD60055;color:var(--y)} .toast.bad{border-color:var(--line2);color:var(--mut)}
   .leaflet-container{background:#0d0d0d}
   /* En el celular las solapas se envolvían y quedaban salteadas alrededor del
      logo (captura de Maxi, 1-ago). Ahora el logo va en su propia fila y las
@@ -630,9 +641,9 @@ const ESTADOS = { pending:'buscando', accepted:'aceptado', arrived:'llegó', in_
                   awaiting_payment:'esperando pago', completed:'terminado', cancelled:'cancelado' };
 function renderTrabajos(){
   $('listaTrabados').innerHTML = TRABADOS.length ? TRABADOS.map(t => `
-    <div class="card" style="border-color:#FF9F0A33">
+    <div class="card" style="border-color:#6b5a1e">
       <div class="ctop">
-        <div class="av" style="color:var(--warn)">⚠</div>
+        <div class="av">⚠</div>
         <div style="min-width:0;flex:1">
           <div class="cnom">${esc(t.motivo || 'Trabado')}</div>
           <div class="csub">${esc(t.detalle || '')} · ${desde(t.desde)}</div>
