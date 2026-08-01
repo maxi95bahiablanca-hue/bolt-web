@@ -81,7 +81,18 @@
   .card{background:linear-gradient(165deg,var(--surf2),var(--surf));border:1px solid var(--line);
         border-radius:16px;padding:16px;transition:.18s}
   .card:hover{border-color:var(--line2);transform:translateY(-1px)}
-  .card.activo{border-color:#FFD60040;box-shadow:0 0 30px #FFD60010}
+  /* Radar prendido = la tarjeta "se prende": borde amarillo, resplandor y un
+     punto latiendo arriba a la derecha. Son los únicos que pueden recibir
+     trabajos ahora mismo, así que tienen que saltar a la vista. */
+  .card.activo{border-color:#FFD60066;box-shadow:0 0 34px #FFD6001f, inset 0 0 30px #FFD60008;position:relative}
+  .card.activo::after{content:'';position:absolute;top:13px;right:13px;width:8px;height:8px;
+        border-radius:50%;background:var(--y);box-shadow:0 0 10px var(--y);animation:latido 1.6s ease-in-out infinite}
+  @keyframes latido{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}
+  .kpi{cursor:pointer}
+  .kpi.filtrando{border-color:var(--y);box-shadow:0 0 24px #FFD60022}
+  .fchip{padding:8px 13px;border-radius:9px;border:1px solid var(--line2);background:var(--surf2);
+         color:var(--mut);font:inherit;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap}
+  .fchip.on{background:var(--y);color:#000;border-color:var(--y);box-shadow:0 0 16px var(--y-glow)}
   .ctop{display:flex;gap:12px;align-items:flex-start;margin-bottom:13px}
   .av{width:46px;height:46px;border-radius:12px;background:var(--surf3);border:1px solid var(--line2);
       display:grid;place-items:center;font-weight:700;font-size:1.05rem;color:var(--y);flex:none;overflow:hidden}
@@ -191,6 +202,7 @@
 
     <section id="v-prestadores">
       <div class="filtros">
+        <button class="fchip" id="chipRadar" onclick="alternarRadar()">📡 Sólo con radar prendido</button>
         <input class="buscar" id="fBuscar" type="text" placeholder="Buscar por nombre, mail o teléfono…" oninput="render()">
         <select id="fEstado" onchange="render()">
           <option value="">Todos los estados</option>
@@ -363,14 +375,17 @@ function pintarKpis(){
   const disponibles = PROFS.filter(p => p.available).length;
   const pendientes = LEADS.filter(l => (l.estado || 'pendiente') === 'pendiente').length;
   const enCurso = TRABAJOS.filter(j => ['pending','accepted','arrived','in_progress'].includes(j.status)).length;
+  // Los KPIs no son sólo números: tocarlos lleva a lo que cuentan.
   $('kpis').innerHTML = [
-    ['Disponibles ahora', disponibles, true],
-    ['Aprobados', aprobados],
-    ['Por revisar', pendientes],
-    ['Trabajos en curso', enCurso],
-    ['Trabados', TRABADOS.length],
-    ['Clientes', CLIENTES.length],
-  ].map(([t, n, dest]) => `<div class="kpi ${dest ? 'destacado' : ''}"><b class="num">${n}</b><span>${t}</span></div>`).join('');
+    ['Disponibles ahora', disponibles, true,  "verRadar()"],
+    ['Aprobados',         aprobados,   false, "irA('prestadores')"],
+    ['Por revisar',       pendientes,  false, "verPendientes()"],
+    ['Trabajos en curso', enCurso,     false, "irA('trabajos')"],
+    ['Trabados',          TRABADOS.length, false, "irA('trabajos')"],
+    ['Clientes',          CLIENTES.length, false, "irA('clientes')"],
+  ].map(([t, n, dest, accion]) =>
+    `<div class="kpi ${dest ? 'destacado' : ''} ${dest && soloRadar ? 'filtrando' : ''}" onclick="${accion}">
+       <b class="num">${n}</b><span>${t}</span></div>`).join('');
 }
 
 // ── Prestadores ──────────────────────────────────────────────────────────
@@ -393,10 +408,30 @@ const FALTANTES = [
   ['dni_frente_url','DNI frente'], ['dni_dorso_url','DNI dorso'], ['selfie_url','selfie'],
 ];
 
+let soloRadar = false;
+function alternarRadar(){
+  soloRadar = !soloRadar;
+  $('chipRadar').classList.toggle('on', soloRadar);
+  render(); pintarKpis();
+}
+/** Desde el KPI: ir a prestadores y dejar sólo los que pueden trabajar ahora. */
+function verRadar(){
+  irA('prestadores');
+  if (!soloRadar) alternarRadar();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function verPendientes(){
+  irA('prestadores');
+  if (soloRadar) alternarRadar();
+  $('fEstado').value = 'pendiente'; render();
+}
+
 function render(){
   const q = ($('fBuscar').value || '').toLowerCase().trim();
   const est = $('fEstado').value, prof = $('fProf').value, ciu = $('fCiudad').value;
   const lista = LEADS.filter(l => {
+    const p = profDeLead(l);
+    if (soloRadar && !p?.available) return false;
     if (est && (l.estado || 'pendiente') !== est) return false;
     if (ciu && l.ciudad !== ciu) return false;
     if (prof && !oficiosDe(l).includes(prof)) return false;
@@ -405,6 +440,12 @@ function render(){
       if (!blob.includes(q)) return false;
     }
     return true;
+  })
+  // Los que pueden trabajar AHORA van primero: es lo que se mira todo el día.
+  .sort((a, b) => {
+    const ra = profDeLead(a)?.available ? 1 : 0, rb = profDeLead(b)?.available ? 1 : 0;
+    if (ra !== rb) return rb - ra;
+    return new Date(b.created_at) - new Date(a.created_at);
   });
   $('listaPrestadores').innerHTML = lista.length
     ? lista.map(tarjetaPrestador).join('')
