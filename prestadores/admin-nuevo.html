@@ -353,6 +353,39 @@ async function cargarProfesionales(){
     .select('id,user_id,first_name,last_name,phone,avatar_url,verification_status,available,avg_rating,completed_jobs,location,professional_professions(profession_id)');
   PROFS = data || [];
 }
+
+// 🔴 La lista NO puede salir sólo de los leads: los dos únicos profesionales
+// que hoy pueden trabajar —Maxi (Pintor + Durlock) y Leonardo (Fletes)— NO
+// TIENEN LEAD, así que no aparecían en ningún lado (Maxi, 1-ago: "no figuro yo
+// en pintor y en durlock"). Se arma la lista con los profesionales REALES y se
+// le engancha su lead si lo tiene; los leads sin profesional se suman al final.
+function personas(){
+  const usados = new Set();
+  const desdeProfs = PROFS.map(p => {
+    const l = LEADS.find(x => {
+      const t = (x.telefono || '').replace(/\D/g, '').slice(-8);
+      const mismoTel = t && (p.phone || '').replace(/\D/g, '').slice(-8) === t;
+      const mismoNom = x.nombre && p.first_name &&
+        x.nombre.toLowerCase().trim() === p.first_name.toLowerCase().trim() &&
+        (!x.apellido || !p.last_name || x.apellido.toLowerCase().trim() === p.last_name.toLowerCase().trim());
+      return mismoTel || mismoNom;
+    });
+    if (l) usados.add(l.id);
+    return { prof: p, lead: l || null };
+  });
+  const sueltos = LEADS.filter(l => !usados.has(l.id)).map(l => ({ prof: null, lead: l }));
+  return [...desdeProfs, ...sueltos];
+}
+
+/** Los oficios de verdad salen de professional_professions; el lead es respaldo. */
+function oficiosDePersona(x){
+  const rel = x.prof?.professional_professions || [];
+  if (rel.length){
+    const nombres = rel.map(r => CATALOGO.find(c => c.id === r.profession_id)?.name).filter(Boolean);
+    if (nombres.length) return nombres;
+  }
+  return x.lead ? oficiosDe(x.lead) : [];
+}
 async function cargarTrabajos(){
   const { data } = await sb.from('jobs')
     .select('id,status,address,created_at,client_id,professional_id,notes,professions(name),professionals(first_name,last_name,phone)')
@@ -448,70 +481,84 @@ function verPendientes(){
 function render(){
   const q = ($('fBuscar').value || '').toLowerCase().trim();
   const est = $('fEstado').value, prof = $('fProf').value, ciu = $('fCiudad').value;
-  const lista = LEADS.filter(l => {
-    const p = profDeLead(l);
+  const lista = personas().filter(x => {
+    const l = x.lead, p = x.prof;
     if (soloRadar && !p?.available) return false;
-    if (est && (l.estado || 'pendiente') !== est) return false;
-    if (ciu && l.ciudad !== ciu) return false;
-    if (prof && !oficiosDe(l).includes(prof)) return false;
+    if (est){
+      const e = l ? (l.estado || 'pendiente')
+                  : (p?.verification_status === 'approved' ? 'aceptado' : 'pendiente');
+      if (e !== est) return false;
+    }
+    if (ciu && l?.ciudad !== ciu) return false;
+    if (prof && !oficiosDePersona(x).includes(prof)) return false;
     if (q){
-      const blob = [l.nombre, l.apellido, l.email, l.telefono, l.ciudad, ...oficiosDe(l)].join(' ').toLowerCase();
+      const blob = [l?.nombre, l?.apellido, l?.email, l?.telefono, l?.ciudad,
+                    p?.first_name, p?.last_name, p?.phone, ...oficiosDePersona(x)]
+                   .filter(Boolean).join(' ').toLowerCase();
       if (!blob.includes(q)) return false;
     }
     return true;
   })
   // Los que pueden trabajar AHORA van primero: es lo que se mira todo el día.
   .sort((a, b) => {
-    const ra = profDeLead(a)?.available ? 1 : 0, rb = profDeLead(b)?.available ? 1 : 0;
+    const ra = a.prof?.available ? 1 : 0, rb = b.prof?.available ? 1 : 0;
     if (ra !== rb) return rb - ra;
-    return new Date(b.created_at) - new Date(a.created_at);
+    const fa = a.lead?.created_at || 0, fb = b.lead?.created_at || 0;
+    return new Date(fb) - new Date(fa);
   });
   $('listaPrestadores').innerHTML = lista.length
     ? lista.map(tarjetaPrestador).join('')
     : '<div class="vacio">No hay prestadores con esos filtros.</div>';
-  lista.forEach(l => { const p = profDeLead(l); if (p?.location) miniMapa('map-' + l.id, p.location); });
+  lista.forEach(x => { if (x.prof?.location) miniMapa('map-' + idDe(x), x.prof.location); });
 }
+const idDe = (x) => x.lead?.id || ('p-' + x.prof?.id);
 
-function tarjetaPrestador(l){
-  const p = profDeLead(l);
-  const estado = l.estado || 'pendiente';
+function tarjetaPrestador(x){
+  const l = x.lead, p = x.prof;
+  const nombre = [p?.first_name || l?.nombre, p?.last_name || l?.apellido].filter(Boolean).join(' ') || '(sin nombre)';
+  const estado = l ? (l.estado || 'pendiente')
+                   : (p?.verification_status === 'approved' ? 'aceptado' : 'pendiente');
   const clase = estado === 'aceptado' ? 'ok' : estado === 'rechazado' ? 'no' : 'pend';
-  const ofs = oficiosDe(l);
-  const faltan = FALTANTES.filter(([k]) => !l[k]).map(([, t]) => t);
+  const ofs = oficiosDePersona(x);
+  const faltan = l ? FALTANTES.filter(([k]) => !l[k]).map(([, t]) => t) : [];
   const puede = p && p.verification_status === 'approved' && (p.professional_professions || []).length > 0;
-  const tel = (l.telefono || '').replace(/\D/g, '');
+  const tel = (l?.telefono || p?.phone || '').replace(/\D/g, '');
+  const telMostrar = l?.telefono || p?.phone || '';
+  const id = idDe(x);
   return `
   <div class="card ${p?.available ? 'activo' : ''}">
     <div class="ctop">
-      <div class="av">${p?.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : ini(l.nombre)}</div>
+      <div class="av">${p?.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : ini(nombre)}</div>
       <div style="min-width:0;flex:1">
-        <div class="cnom">${esc(l.nombre || '(sin nombre)')} ${esc(l.apellido || '')}</div>
-        <div class="csub">${esc(l.ciudad || 'sin ciudad')}${l.zona ? ' · ' + esc(l.zona) : ''} · anotado ${fecha(l.created_at)}</div>
+        <div class="cnom">${esc(nombre)}</div>
+        <div class="csub">${esc(l?.ciudad || 'Bahía Blanca')}${l?.zona ? ' · ' + esc(l.zona) : ''}${l ? ' · anotado ' + fecha(l.created_at) : ' · registrado en la app'}</div>
         <div class="chips">
           ${ofs.length ? ofs.map(o => `<span class="chip">${esc(o)}</span>`).join('') : '<span class="chip gris">sin oficio</span>'}
           ${p?.available ? '<span class="chip">📡 radar prendido</span>' : ''}
           ${puede ? '' : '<span class="chip gris">no recibe trabajos</span>'}
+          ${!l ? '<span class="chip gris">sin ficha de registro</span>' : ''}
         </div>
       </div>
       <span class="est ${clase}">${estado}</span>
     </div>
 
     <dl class="datos">
-      <dt>Mail</dt><dd>${l.email ? `<a href="mailto:${esc(l.email)}">${esc(l.email)}</a>` : '<span class="falta">no dejó</span>'}</dd>
-      <dt>WhatsApp</dt><dd>${tel ? esc(l.telefono) : '<span class="falta">no dejó</span>'}</dd>
+      <dt>Mail</dt><dd>${l?.email ? `<a href="mailto:${esc(l.email)}">${esc(l.email)}</a>` : '<span class="falta">no figura</span>'}</dd>
+      <dt>WhatsApp</dt><dd>${telMostrar ? esc(telMostrar) : '<span class="falta">no figura</span>'}</dd>
       <dt>En la app</dt><dd>${p ? `sí · ${p.completed_jobs || 0} trabajos · ⭐ ${p.avg_rating ? Number(p.avg_rating).toFixed(1) : '—'}` : '<span class="falta">todavía no entró</span>'}</dd>
+      <dt>Radar</dt><dd>${p ? (p.available ? '📡 prendido — puede recibir trabajos ahora' : 'apagado') : '—'}</dd>
       ${faltan.length ? `<dt>Le falta</dt><dd class="falta">${faltan.join(', ')}</dd>` : ''}
     </dl>
 
-    ${p?.location ? `<div class="mapa-mini" id="map-${l.id}"></div>`
+    ${p?.location ? `<div class="mapa-mini" id="map-${id}"></div>`
                   : `<div class="sin-ubi">Sin ubicación — nunca prendió el radar</div>`}
 
     <div class="acciones">
-      ${estado !== 'aceptado' ? `<button class="b pri" onclick="aceptar('${l.id}')">Aceptar y avisar</button>` : ''}
-      ${tel ? `<button class="b wa" onclick="wa('${esc(l.telefono)}','${esc(l.nombre || '')}')">WhatsApp</button>` : ''}
-      ${l.email ? `<button class="b mail" onclick="pedirDatos('${l.id}')">Pedirle los datos</button>` : ''}
-      <button class="b" onclick="verDocs('${l.id}')">Documentos</button>
-      <button class="b del" onclick="borrar('${l.id}')">Eliminar</button>
+      ${l && estado !== 'aceptado' ? `<button class="b pri" onclick="aceptar('${l.id}')">Aceptar y avisar</button>` : ''}
+      ${tel ? `<button class="b wa" onclick="wa('${esc(telMostrar)}','${esc((p?.first_name || l?.nombre) || '')}')">WhatsApp</button>` : ''}
+      ${l?.email ? `<button class="b mail" onclick="pedirDatos('${l.id}')">Pedirle los datos</button>` : ''}
+      ${l ? `<button class="b" onclick="verDocs('${l.id}')">Documentos</button>` : ''}
+      ${l ? `<button class="b del" onclick="borrar('${l.id}')">Eliminar</button>` : ''}
     </div>
   </div>`;
 }
