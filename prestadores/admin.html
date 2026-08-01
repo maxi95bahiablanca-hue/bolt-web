@@ -681,7 +681,7 @@ function render(){
   $('listaPrestadores').innerHTML = lista.length
     ? lista.map(tarjetaPrestador).join('')
     : '<div class="vacio">No hay prestadores con esos filtros.</div>';
-  lista.forEach(x => { if (x.prof?.location) miniMapa('map-' + idDe(x), x.prof.location); });
+  lista.forEach(x => { if (coords(x.prof?.location)) miniMapa('map-' + idDe(x), x.prof.location); });
 }
 const idDe = (x) => x.lead?.id || ('p-' + x.prof?.id);
 
@@ -698,7 +698,7 @@ function tarjetaPrestador(x){
   const telMostrar = l?.telefono || p?.phone || '';
   const id = idDe(x);
   return `
-  <div class="card ${p?.available ? 'activo' : ''}">
+  <div class="card ${enElMapa(p) ? 'activo' : ''}">
     <div class="ctop">
       <div class="av">${p?.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : ini(nombre)}</div>
       <div style="min-width:0;flex:1">
@@ -706,7 +706,8 @@ function tarjetaPrestador(x){
         <div class="csub">${esc(l?.ciudad || 'Bahía Blanca')}${l?.zona ? ' · ' + esc(l.zona) : ''}${l ? ' · anotado ' + fecha(l.created_at) : ' · registrado en la app'}</div>
         <div class="chips">
           ${ofs.length ? ofs.map(o => `<span class="chip">${esc(o)}</span>`).join('') : '<span class="chip gris">sin oficio</span>'}
-          ${p?.available ? '<span class="chip">📡 radar prendido</span>' : ''}
+          ${enElMapa(p) ? '<span class="chip">📡 radar prendido</span>'
+            : (p?.available ? '<span class="chip gris">📡 sin ubicación</span>' : '')}
           ${puede ? '' : '<span class="chip gris">no recibe trabajos</span>'}
           ${!l ? '<span class="chip gris">sin ficha de registro</span>' : ''}
         </div>
@@ -728,12 +729,21 @@ function tarjetaPrestador(x){
         return '<span class="falta">todavía no entró</span>';
       })()}</dd>
       <dt>Trabajos</dt><dd>${p ? `${p.completed_jobs || 0} hechos · ⭐ ${p.avg_rating ? Number(p.avg_rating).toFixed(1) : '—'}${p.anios_oficio ? ` · ${p.anios_oficio} años de oficio` : ''}` : '—'}</dd>
-      <dt>Radar</dt><dd>${p ? (p.available ? '📡 prendido — puede recibir trabajos ahora' : (p.location ? 'apagado' : '<span class="falta">nunca lo prendió</span>')) : '—'}</dd>
+      <dt>Radar</dt><dd>${(() => {
+        if (!p) return '—';
+        // Prendido y con ubicación son cosas distintas: sin ubicación el mapa no
+        // lo puede poner en ningún lado, así que NO le llega ni un trabajo. Decir
+        // "puede recibir trabajos" ahí sería mentira.
+        if (p.available && coords(p.location)) return '📡 prendido — puede recibir trabajos ahora';
+        if (p.available) return '<span class="falta">prendido, pero sin ubicación — todavía no aparece en el mapa</span>';
+        if (coords(p.location)) return 'apagado';
+        return '<span class="falta">nunca lo prendió</span>';
+      })()}</dd>
       ${faltan.length ? `<dt>Le falta</dt><dd class="falta">${faltan.join(', ')}</dd>` : ''}
     </dl>
 
-    ${p?.location ? `<div class="mapa-mini" id="map-${id}"></div>`
-                  : `<div class="sin-ubi">Sin ubicación — nunca prendió el radar</div>`}
+    ${coords(p?.location) ? `<div class="mapa-mini" id="map-${id}"></div>`
+                          : `<div class="sin-ubi">Sin ubicación — nunca prendió el radar</div>`}
 
     <div class="acciones">
       ${l && estado !== 'aceptado' ? `<button class="b pri" onclick="aceptar('${l.id}')">Aceptar y avisar</button>` : ''}
@@ -825,13 +835,45 @@ function verTrabajo(id){
 }
 
 // ── Mapas ────────────────────────────────────────────────────────────────
-// `location` viene como POINT(lng lat) o {coordinates:[lng,lat]}.
+// `location` puede llegar de tres formas y hay que entender las tres.
+//
+// 🔴 La que faltaba —y la que usa Supabase de verdad— es la tercera: una
+// columna PostGIS no viaja como texto legible sino como binario en hexa
+// ("0101000020E6100000DF50F86C1D1F4FC0..."). Como el valor no era vacío, la
+// tarjeta dibujaba el recuadro del mapa igual, pero sin coordenadas quedaba
+// el hueco negro. Por eso ningún pin aparecía, ni en las tarjetas ni en la
+// solapa Mapa, aunque las ubicaciones estuvieran perfectamente guardadas.
 function coords(loc){
   if (!loc) return null;
   if (typeof loc === 'object' && Array.isArray(loc.coordinates)) return [loc.coordinates[1], loc.coordinates[0]];
-  const m = String(loc).match(/POINT\(([-\d.]+)\s+([-\d.]+)\)/i);
-  return m ? [parseFloat(m[2]), parseFloat(m[1])] : null;
+  const txt = String(loc);
+  const m = txt.match(/POINT\(([-\d.]+)\s+([-\d.]+)\)/i);
+  if (m) return [parseFloat(m[2]), parseFloat(m[1])];
+  return desdeHexPostGIS(txt);
 }
+
+// Punto en WKB/EWKB hexa: 1 byte de orden, 4 de tipo, 4 de SRID si lo trae,
+// y después longitud y latitud como dos números de 8 bytes.
+function desdeHexPostGIS(hex){
+  if (!/^[0-9A-Fa-f]+$/.test(hex) || hex.length < 42) return null;
+  try {
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+    const dv = new DataView(bytes.buffer);
+    const chico = bytes[0] === 1;                    // 1 = little endian
+    const tipo  = dv.getUint32(1, chico);
+    const off   = 5 + ((tipo & 0x20000000) ? 4 : 0); // saltear el SRID si está
+    if (off + 16 > bytes.length) return null;
+    const lng = dv.getFloat64(off, chico);
+    const lat = dv.getFloat64(off + 8, chico);
+    if (!isFinite(lat) || !isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+    return [lat, lng];
+  } catch { return null; }
+}
+/** Lo único que importa de verdad: ¿un cliente lo encuentra ahora mismo?
+ *  Hacen falta las dos cosas, el radar prendido y una ubicación guardada. */
+function enElMapa(p){ return !!(p && p.available && coords(p.location)); }
+
 function miniMapa(divId, loc){
   const c = coords(loc); const el = $(divId);
   if (!c || !el || el.dataset.listo) return;
@@ -880,7 +922,7 @@ async function pintarMetricas(){
     for (const o of oficiosDePersona(x)){
       const e = porOf[o] || (porOf[o] = { total: 0, listos: 0 });
       e.total++;
-      if (x.prof?.available) e.listos++;
+      if (enElMapa(x.prof)) e.listos++;   // prendido Y ubicado: si no, no lo encuentran
     }
   }
   const filas = Object.entries(porOf).sort((a, b) => b[1].listos - a[1].listos || b[1].total - a[1].total);
