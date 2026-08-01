@@ -603,7 +603,9 @@ function tarjetaPrestador(x){
       ${l && estado !== 'aceptado' ? `<button class="b pri" onclick="aceptar('${l.id}')">Aceptar y avisar</button>` : ''}
       ${tel ? `<button class="b wa" onclick="wa('${esc(telMostrar)}','${esc((p?.first_name || l?.nombre) || '')}')">WhatsApp</button>` : ''}
       ${l?.email ? `<button class="b mail" onclick="pedirDatos('${l.id}')">Pedirle los datos</button>` : ''}
+      ${l ? `<button class="b" onclick="editar('${l.id}')">Editar datos</button>` : ''}
       ${l ? `<button class="b" onclick="verDocs('${l.id}')">Documentos</button>` : ''}
+      ${l && estado !== 'rechazado' ? `<button class="b" onclick="rechazar('${l.id}')">Rechazar</button>` : ''}
       ${l ? `<button class="b del" onclick="borrar('${l.id}')">Eliminar</button>` : ''}
     </div>
   </div>`;
@@ -654,7 +656,10 @@ function renderTrabajos(){
         </div>
       </div>
       <div class="acciones">
-        <button class="b" onclick="verTrabajo('${t.job_id}')">Ver el trabajo</button>
+        ${t.worker_user ? `<button class="b pri" onclick="preguntarAlTrabajador('${t.job_id}','${t.worker_user}','${t.motivo}')">Preguntarle</button>` : ''}
+        <button class="b" onclick="asignarOtro('${t.job_id}')">Pasarlo a otro</button>
+        <button class="b" onclick="cerrarTrabado('${t.job_id}')">Darlo por terminado</button>
+        <button class="b del" onclick="verTrabajo('${t.job_id}')">Ver detalle</button>
       </div>
     </div>`).join('') : '<div class="vacio">Ningún trabajo trabado. 👌</div>';
 
@@ -784,6 +789,83 @@ async function borrar(id){
   const { error } = await sb.rpc('admin_borrar_lead', { p_id: id });
   if (error) return aviso('No se pudo eliminar: ' + error.message, 'bad');
   aviso('Eliminado'); await cargarLeads(); render(); pintarKpis();
+}
+
+// ── Herramientas para destrabar trabajos ─────────────────────────────────
+// Portadas del panel anterior: sin esto el panel nuevo sería más lindo pero
+// serviría para menos, que es la peor forma de estrenar algo.
+const MOTIVOS = {
+  acepto_y_no_fue:   { pregunta: '¿Pudiste ir al trabajo que aceptaste? Si no vas a poder, avisanos.' },
+  llego_y_no_empezo: { pregunta: 'Marcaste que llegaste, ¿pudiste empezar el trabajo?' },
+  jornada_abierta:   { pregunta: 'Tenés una jornada abierta hace rato, ¿terminaste por hoy?' },
+  sin_respuesta:     { pregunta: 'Tenés un pedido esperando respuesta, ¿lo vas a tomar?' },
+};
+async function preguntarAlTrabajador(jobId, userId, motivo){
+  const m = MOTIVOS[motivo] || { pregunta: '¿Cómo viene ese trabajo? Contanos así lo destrabamos.' };
+  try {
+    await sb.functions.invoke('send-push', {
+      body: { userId, title: '⚡ BOLT te pregunta', body: m.pregunta, data: { jobId, screen: 'tracking' } } });
+    aviso('Listo, le preguntamos. Si no contesta sigue apareciendo acá.');
+  } catch (e) { aviso('No se pudo avisar: ' + e.message, 'bad'); }
+}
+
+async function asignarOtro(jobId){
+  const { data: cand, error } = await sb.rpc('candidatos_para_trabajo', { p_job_id: jobId });
+  if (error) return aviso('No se pudo buscar: ' + error.message, 'bad');
+  if (!cand?.length) return aviso('No hay otro profesional aprobado con ese oficio.', 'bad');
+  const lista = cand.map((c, i) => `${i+1}) ${c.nombre}${c.disponible ? ' (radar prendido)' : ' (sin radar)'} — ${c.trabajos} trabajos`).join('\n');
+  const elegido = prompt('¿A quién se lo paso?\n\n' + lista + '\n\nEscribí el número:');
+  const n = parseInt(elegido, 10);
+  if (!n || n < 1 || n > cand.length) return;
+  const nuevo = cand[n - 1];
+  if (!confirm(`¿Pasarle el trabajo a ${nuevo.nombre}?\n\nAl anterior se le borra de su lista.`)) return;
+  const { data, error: e2 } = await sb.rpc('reasignar_trabajo', { p_job_id: jobId, p_prof_id: nuevo.id });
+  if (e2) return aviso('No se pudo: ' + e2.message, 'bad');
+  if (data !== 'reasignado') return aviso(String(data), 'bad');
+  const { data: nu } = await sb.from('professionals').select('user_id').eq('id', nuevo.id).single();
+  if (nu?.user_id) sb.functions.invoke('send-push', { body: {
+    userId: nu.user_id, title: '⚡ Te asignamos un trabajo',
+    body: 'Un trabajo pasó a vos. Abrilo en BOLT para ver los detalles.',
+    data: { jobId, screen: 'tracking' } } }).catch(() => {});
+  aviso(`Listo: ahora es de ${nuevo.nombre}`);
+  cargarTrabados();
+}
+
+async function cerrarTrabado(jobId){
+  if (!confirm('¿Dar por terminado este trabajo? Deja de figurar como activo.')) return;
+  const { error } = await sb.from('jobs')
+    .update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', jobId);
+  if (error) return aviso('No se pudo: ' + error.message, 'bad');
+  aviso('Trabajo cerrado'); await cargarTrabajos(); cargarTrabados(); pintarKpis();
+}
+
+// ── Editar los datos de un prestador ─────────────────────────────────────
+async function editar(id){
+  const l = LEADS.find(x => x.id === id); if (!l) return;
+  const campos = [
+    ['nombre','Nombre'], ['apellido','Apellido'], ['telefono','WhatsApp'],
+    ['email','Email'], ['ciudad','Ciudad'], ['zona','Zona o barrio'],
+  ];
+  const nuevo = {};
+  for (const [k, t] of campos){
+    const v = prompt(`${t}:`, l[k] || '');
+    if (v === null) return;                  // canceló: no se guarda nada
+    if (v.trim() !== String(l[k] || '')) nuevo[k] = v.trim() || null;
+  }
+  if (!Object.keys(nuevo).length) return aviso('No cambiaste nada.');
+  const { error } = await sb.from('prestador_leads').update(nuevo).eq('id', id);
+  if (error) return aviso('No se pudo guardar: ' + error.message, 'bad');
+  aviso('Datos guardados ✅'); await cargarLeads(); render();
+}
+
+async function rechazar(id){
+  const l = LEADS.find(x => x.id === id); if (!l) return;
+  const motivo = prompt(`¿Por qué rechazás a ${l.nombre}? (queda anotado)`, '');
+  if (motivo === null) return;
+  const { error } = await sb.from('prestador_leads')
+    .update({ estado: 'rechazado', nota: motivo || null }).eq('id', id);
+  if (error) return aviso('No se pudo: ' + error.message, 'bad');
+  aviso('Rechazado'); await cargarLeads(); render(); pintarKpis();
 }
 
 // ── Arranque ─────────────────────────────────────────────────────────────
