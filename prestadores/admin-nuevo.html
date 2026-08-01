@@ -541,33 +541,44 @@ function pintarAlertas(){
 
   const bloques = [];
   if (sinOficio.length) bloques.push({
-    tono: 'grave',
+    tono: 'grave', motivo: 'oficio',
     titulo: `${sinOficio.length} aprobado${sinOficio.length > 1 ? 's' : ''} SIN OFICIO`,
     texto: 'El sistema busca por oficio: sin eso no les llega ni un trabajo, por más que prendan el radar.',
-    quienes: sinOficio.map(nombre),
-    quehacer: 'Cargale el oficio desde su tarjeta.',
+    gente: sinOficio,
+    quehacer: 'Cargale el oficio desde su tarjeta o preguntale cuál es.',
   });
   if (sinRadar.length) bloques.push({
-    tono: 'medio',
+    tono: 'medio', motivo: 'radar',
     titulo: `${sinRadar.length} con el radar apagado`,
     texto: 'Tienen oficio y están aprobados, pero mientras no lo prendan son invisibles.',
-    quienes: sinRadar.map(nombre),
-    quehacer: 'Sólo lo puede prender la persona, desde la app.',
+    gente: sinRadar,
+    quehacer: 'Sólo lo puede prender la persona, desde la app. Escribile.',
   });
   if (sinAvisos.length) bloques.push({
-    tono: 'medio',
+    tono: 'medio', motivo: 'avisos',
     titulo: `${sinAvisos.length} sin permiso de notificaciones`,
     texto: 'Aunque estén disponibles, no se enteran de un trabajo salvo que tengan la app abierta.',
-    quienes: sinAvisos.map(nombre),
+    gente: sinAvisos,
     quehacer: 'Que lo habiliten en la app.',
   });
 
+  // Cada persona con su botón de WhatsApp y el mensaje ya escrito: la alerta
+  // sin la acción al lado es una alerta que no se resuelve (Maxi, 1-ago).
   $('alertas').innerHTML = bloques.length ? bloques.map(b => `
     <div class="alerta ${b.tono === 'grave' ? 'grave' : ''}">
       <div class="alerta-tit">${b.tono === 'grave' ? '🔴' : '⚠️'} ${esc(b.titulo)}</div>
       <div class="alerta-txt">${esc(b.texto)}</div>
-      <div class="alerta-quienes">${b.quienes.map(q => `<span class="chip gris">${esc(q)}</span>`).join('')}</div>
-      <div class="alerta-txt" style="margin-top:6px;opacity:.8">→ ${esc(b.quehacer)}</div>
+      <div class="alerta-quienes">
+        ${b.gente.map(p => {
+          const tel = telefonoDe(p);
+          const nom = `${p.first_name || ''} ${p.last_name || ''}`.trim();
+          return tel
+            ? `<button class="b wa" style="font-size:.74rem;padding:5px 10px"
+                 onclick="avisar('${esc(tel)}','${esc(p.first_name || nom)}','${b.motivo}')">💬 ${esc(nom)}</button>`
+            : `<span class="chip gris">${esc(nom)} — sin teléfono</span>`;
+        }).join('')}
+      </div>
+      <div class="alerta-txt" style="margin-top:8px;opacity:.8">→ ${esc(b.quehacer)}</div>
     </div>`).join('') : '';
 }
 
@@ -884,6 +895,34 @@ async function pintarMetricas(){
 }
 
 // ── Acciones ─────────────────────────────────────────────────────────────
+/** El teléfono de un profesional: el de su ficha o el que dejó al anotarse. */
+function telefonoDe(p){
+  if (p?.phone) return p.phone;
+  const l = LEADS.find(x => {
+    const t = (x.telefono || '').replace(/\D/g, '').slice(-8);
+    return (t && (p?.phone || '').replace(/\D/g, '').slice(-8) === t) ||
+           (x.nombre && p?.first_name && x.nombre.toLowerCase().trim() === p.first_name.toLowerCase().trim());
+  });
+  return l?.telefono || '';
+}
+
+// Mensajes por lo que le falta a cada uno. Escritos como se los diría una
+// persona, no como una notificación del sistema: son gente que se anotó, no
+// usuarios que hay que "activar".
+const MENSAJES = {
+  oficio: (n) => `Hola ${n}! Soy Maxi de BOLT ⚡ Te tengo aprobado pero me falta un dato para que te lleguen los trabajos: ¿qué oficio hacés? Con eso te dejo listo.`,
+  radar:  (n) => `Hola ${n}! Soy Maxi de BOLT ⚡ Ya estás aprobado y listo para recibir trabajos. Sólo falta un paso: abrí la app y prendé el radar (el botón grande de la pantalla principal). Mientras esté apagado no te llega nada, aunque haya pedidos de tu oficio cerca.`,
+  avisos: (n) => `Hola ${n}! Soy Maxi de BOLT ⚡ Una cosita: la app no tiene permiso para mandarte notificaciones, así que no te vas a enterar cuando entre un trabajo. Entrá a la app y aceptá los avisos cuando te lo pida (o desde Ajustes del teléfono).`,
+};
+
+/** Abre WhatsApp con el mensaje según lo que le falta a esa persona. */
+function avisar(tel, nombre, motivo){
+  const n = String(tel).replace(/\D/g, '');
+  const full = n.startsWith('54') ? n : ('549' + n.slice(-10));
+  const arma = MENSAJES[motivo] || MENSAJES.radar;
+  window.open('https://wa.me/' + full + '?text=' + encodeURIComponent(arma(nombre || '')), '_blank');
+}
+
 function wa(tel, nombre){
   const n = String(tel).replace(/\D/g, '');
   const full = n.startsWith('54') ? n : ('549' + n.slice(-10));
