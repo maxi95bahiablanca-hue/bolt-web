@@ -433,9 +433,19 @@ async function cargarLeads(){
 }
 async function cargarProfesionales(){
   const { data } = await sb.from('professionals')
-    .select('id,user_id,first_name,last_name,phone,avatar_url,verification_status,available,avg_rating,completed_jobs,location,professional_professions(profession_id)');
+    .select('id,user_id,first_name,last_name,phone,avatar_url,verification_status,available,avg_rating,completed_jobs,location,anios_oficio,professional_professions(profession_id)');
   PROFS = data || [];
+  // ¿Quién tiene la app instalada? El token de push sólo existe si abrió la app
+  // en un teléfono real y aceptó notificaciones: es la prueba más directa.
+  // Entrar por la web NO deja token, así que distingue a los que se anotaron de
+  // los que realmente bajaron la app (pregunta de Maxi, 1-ago).
+  try {
+    const { data: tk } = await sb.from('push_tokens').select('user_id,platform,updated_at');
+    TOKENS = {};
+    for (const t of tk || []) TOKENS[t.user_id] = t;
+  } catch { TOKENS = {}; }
 }
+let TOKENS = {};
 
 // 🔴 La lista NO puede salir sólo de los leads: los dos únicos profesionales
 // que hoy pueden trabajar —Maxi (Pintor + Durlock) y Leonardo (Fletes)— NO
@@ -640,8 +650,14 @@ function tarjetaPrestador(x){
     <dl class="datos">
       <dt>Mail</dt><dd>${l?.email ? `<a href="mailto:${esc(l.email)}">${esc(l.email)}</a>` : '<span class="falta">no figura</span>'}</dd>
       <dt>WhatsApp</dt><dd>${telMostrar ? esc(telMostrar) : '<span class="falta">no figura</span>'}</dd>
-      <dt>En la app</dt><dd>${p ? `sí · ${p.completed_jobs || 0} trabajos · ⭐ ${p.avg_rating ? Number(p.avg_rating).toFixed(1) : '—'}` : '<span class="falta">todavía no entró</span>'}</dd>
-      <dt>Radar</dt><dd>${p ? (p.available ? '📡 prendido — puede recibir trabajos ahora' : 'apagado') : '—'}</dd>
+      <dt>Tiene la app</dt><dd>${(() => {
+        const t = p?.user_id ? TOKENS[p.user_id] : null;
+        if (t) return `✅ sí — la abrió ${desde(t.updated_at)}`;
+        if (p) return '<span class="falta">NO la bajó — sólo entró por la web</span>';
+        return '<span class="falta">todavía no entró</span>';
+      })()}</dd>
+      <dt>Trabajos</dt><dd>${p ? `${p.completed_jobs || 0} hechos · ⭐ ${p.avg_rating ? Number(p.avg_rating).toFixed(1) : '—'}${p.anios_oficio ? ` · ${p.anios_oficio} años de oficio` : ''}` : '—'}</dd>
+      <dt>Radar</dt><dd>${p ? (p.available ? '📡 prendido — puede recibir trabajos ahora' : (p.location ? 'apagado' : '<span class="falta">nunca lo prendió</span>')) : '—'}</dd>
       ${faltan.length ? `<dt>Le falta</dt><dd class="falta">${faltan.join(', ')}</dd>` : ''}
     </dl>
 
