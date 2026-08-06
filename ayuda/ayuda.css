@@ -77,19 +77,34 @@ a{ color:var(--negro); }
 }
 .volver:hover{ color:var(--negro); }
 
+/* El logo. Antes era "BO" + un "LT" con fondo amarillo pegado a la letra: el
+   recuadro se chocaba con el texto y quedaba sucio. Ahora es un cuadrado negro
+   con el rayo amarillo adentro —el mismo lenguaje que los íconos— y la palabra
+   al lado, limpia. */
 .marca{
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
   font-size:17px;
   font-weight:800;
-  letter-spacing:-0.02em;
+  letter-spacing:0.02em;
   text-decoration:none;
   color:var(--negro);
   white-space:nowrap;
 }
 .marca em{
   font-style:normal;
-  background:var(--amarillo);
-  padding:1px 5px;
-  border-radius:5px;
+  width:28px; height:28px;
+  flex:0 0 28px;
+  background:var(--negro);
+  color:var(--amarillo);
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:15px;
+  font-weight:900;
+  letter-spacing:0;
 }
 
 /* ── Encabezado de página ────────────────────────────────────── */
@@ -386,16 +401,30 @@ details.pregunta .desplegable-cuerpo p{ color:var(--gris); }
   break-inside:avoid;
 }
 .tarjeta:hover{ border-color:var(--negro); background:var(--papel); }
+/* Maxi (6-ago-2026): "deberían ser cuadros negros con el dibujo amarillo
+   adentro, para que los chips se noten de verdad".
+   Tenía razón: el cuadro amarillo con el emoji encima se lavaba contra el
+   blanco de la tarjeta y no se leía como un ícono, se leía como una mancha.
+   En negro, el cuadro tiene peso y el dibujo salta. */
 .tarjeta .ico{
-  flex:0 0 46px;
-  width:46px; height:46px;
-  background:var(--amarillo);
-  border-radius:12px;
+  flex:0 0 54px;
+  width:54px; height:54px;
+  background:var(--negro);
+  border-radius:14px;
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:23px;
+  font-size:26px;
   line-height:1;
+  /* Los emojis vienen con su propio color. Se pasan a escala de grises y se
+     tiñen de amarillo para que respeten la paleta y no metan un cuarto color. */
+  filter:grayscale(1) brightness(0) invert(83%) sepia(63%) saturate(2200%)
+         hue-rotate(1deg) brightness(105%) contrast(103%);
+}
+/* Al pasar el mouse, el cuadro se invierte: amarillo con el dibujo negro. */
+.tarjeta:hover .ico{
+  background:var(--amarillo);
+  filter:grayscale(1) brightness(0);
 }
 .tarjeta .txt strong{
   display:block;
@@ -535,6 +564,43 @@ details.pregunta .desplegable-cuerpo p{ color:var(--gris); }
   .cabecera{ padding:48px 0 6px; }
   .tarjetas{ grid-template-columns:1fr 1fr; }
   .tarjeta.ancha{ grid-column:1 / -1; }
+}
+
+/* ── El índice usa más ancho que las páginas de lectura ──────────
+   Maxi (6-ago-2026): "los costados están vacíos, y donde empieza el título
+   igual. Está flojo".
+   Tenía razón, y el motivo es que 660px es el ancho correcto para LEER —unos
+   65 caracteres por renglón— pero es angosto para una grilla de tarjetas: deja
+   dos franjas blancas enormes a los lados y el título arrancando en el medio
+   de la nada. Las páginas de texto siguen en 660; el índice se ensancha. */
+@media (min-width:880px){
+  body.indice .hoja,
+  body.indice .barra-in{ max-width:1000px; }
+  body.indice h1{ font-size:3.2rem; }
+  body.indice .cabecera{ padding:64px 0 10px; }
+  body.indice .bajada{ font-size:1.25rem; max-width:52ch; }
+  body.indice .tarjetas{ grid-template-columns:1fr 1fr 1fr; gap:18px; }
+  body.indice .tarjeta.ancha{ grid-column:1 / -1; }
+}
+
+/* Y una franja negra detrás del título: le da peso al arranque y separa la
+   portada del listado, que era lo que se sentía flojo. */
+body.indice .cabecera{
+  background:var(--negro);
+  color:var(--blanco);
+  margin:0 -20px 30px;
+  padding-left:20px;
+  padding-right:20px;
+  border-radius:0 0 22px 22px;
+}
+body.indice .cabecera h1{ color:var(--blanco); }
+body.indice .cabecera h1 em{
+  font-style:normal;
+  color:var(--amarillo);
+}
+body.indice .cabecera .bajada{ color:#C9C9CF; }
+@media (min-width:880px){
+  body.indice .cabecera{ margin-left:-28px; margin-right:-28px; padding:64px 28px 40px; }
 }
 
 /* ══════════════════════════════════════════════════════════════
