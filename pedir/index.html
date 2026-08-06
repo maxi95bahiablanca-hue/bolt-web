@@ -531,6 +531,16 @@ function volverAlPedido(){
   pintarFlot();
 }
 
+// ── Lo que viene de la home ────────────────────────────────────────────
+// La home manda dos cosas por la dirección: `q` (lo que el cliente escribió
+// en el buscador) y `oficio` (el id de la tarjeta que tocó). Sin esto, quien
+// ya escribió el problema en la home tiene que volver a escribirlo acá, y el
+// oficio que eligió se pierde en el camino.
+const DE_LA_HOME = new URLSearchParams(location.search);
+const HOME_TEXTO  = (DE_LA_HOME.get('q') || '').trim().slice(0, 400);
+const HOME_OFICIO = (DE_LA_HOME.get('oficio') || '').trim();
+if (HOME_TEXTO) $('txtProblema').value = HOME_TEXTO;
+
 // ── Oficios rápidos (catálogo real, no una lista inventada) ─────────────
 let CATALOGO = [];
 (async () => {
@@ -539,6 +549,22 @@ let CATALOGO = [];
     CATALOGO = data || [];
     $('chipsOficio').innerHTML = CATALOGO.slice(0, 10).map(p =>
       `<button type="button" class="chip" data-id="${p.id}" onclick="tocarChip(this)">${esc(p.name)}</button>`).join('');
+
+    // El oficio que venía de la home. Se busca por id y, si no aparece, por
+    // nombre: así un id que cambie en la base no deja el link muerto.
+    if (HOME_OFICIO){
+      const limpio = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const p = CATALOGO.find(x => String(x.id) === HOME_OFICIO) ||
+                CATALOGO.find(x => limpio(x.name) === limpio(HOME_OFICIO));
+      if (p){
+        S.profesionId = p.id;
+        S.oficio = p.name;
+        // Puede no tener chip: sólo se muestran los 10 primeros. La elección
+        // vale igual, que es lo que importa.
+        const chip = document.querySelector(`#chipsOficio .chip[data-id="${p.id}"]`);
+        if (chip) chip.classList.add('on');
+      }
+    }
   } catch (e) { /* sin catálogo, el asistente igual deduce el oficio */ }
 })();
 
