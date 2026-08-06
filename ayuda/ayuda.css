@@ -1,13 +1,19 @@
 /* ──────────────────────────────────────────────────────────────
    BOLT — Centro de ayuda
+
+   Mismo sistema que el resto de la web (6-ago-2026): negro parejo,
+   blanco, y el amarillo SÓLO en detalles. Nada con esquina viva:
+   círculos, píldoras y radios grandes. Los pesos van en 550-600,
+   nunca en 900: la jerarquía la hacen el tamaño y el aire.
+
    Tipografía: Inter, hospedada en este mismo sitio (web/fuentes/).
    NO se pide a Google ni a ningún CDN: si ese servidor tarda o
    falla, el texto se ve mal, y eso es justo lo que no queremos.
-   Un solo archivo variable cubre todos los grosores (100–900).
-   Inter — Rasmus Andersson — SIL Open Font License 1.1
-   (el texto de la licencia está en web/fuentes/LICENSE.txt).
-   La del sistema queda de respaldo, nunca de principal.
-   Paleta: blanco, amarillo y negro. Nada más.
+   Inter — Rasmus Andersson — SIL Open Font License 1.1.
+
+   🔴 EL PAPEL SIGUE SIENDO BLANCO. Todo lo de acá es para pantalla;
+   el bloque @media print del final devuelve negro sobre blanco, que
+   es como tiene que salir un PDF que alguien va a imprimir.
    ────────────────────────────────────────────────────────────── */
 
 @font-face{
@@ -25,13 +31,26 @@
 }
 
 :root{
-  --blanco:  #FFFFFF;
-  --papel:   #F7F7F5;
-  --negro:   #0A0A0A;
-  --gris:    #4A4A52;
-  --tenue:   #8E8E96;
+  --fondo:   #08090A;
+  --sup:     rgba(255,255,255,.035);
+  --sup2:    rgba(255,255,255,.06);
+  --linea:   rgba(255,255,255,.09);
+  --linea2:  rgba(255,255,255,.16);
+  --tinta:   #FFFFFF;
   --amarillo:#FFD600;
-  --borde:   #E4E4DE;
+  --gris:    #9BA1A8;
+  --tenue:   #6B7278;
+  --rojo:    #FF6B6B;
+
+  /* Los nombres viejos siguen existiendo porque el marcado de las diez
+     páginas los usa. Ojo: --blanco es el FONDO y --negro es la TINTA,
+     que en oscuro quedaron dados vuelta. Donde algo usaba --negro como
+     fondo (el cuadrito del logo, la barra de la pantalla de la app) está
+     puesto a mano más abajo. */
+  --blanco:  var(--fondo);
+  --papel:   var(--sup);
+  --negro:   var(--tinta);
+  --borde:   var(--linea);
 }
 
 *,*::before,*::after{ box-sizing:border-box; }
@@ -43,8 +62,8 @@ html{
 
 body{
   margin:0;
-  background:var(--blanco);
-  color:var(--negro);
+  background:var(--fondo);
+  color:var(--tinta);
   font-family:"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
               sans-serif;
   /* Dos cosas que trae Inter y el sistema no: cv05 = la ele con cola
@@ -56,7 +75,26 @@ body{
   text-rendering:optimizeLegibility;
   font-size:17px;
   line-height:1.65;
+  overflow-x:hidden;
 }
+
+/* El halo que gira, como en toda la web */
+body::before{
+  content:"";
+  position:fixed;
+  top:-460px; left:50%;
+  width:1000px; height:1000px;
+  margin-left:-500px;
+  pointer-events:none;
+  z-index:0;
+  border-radius:50%;
+  background:conic-gradient(from 0deg,
+    rgba(255,214,0,.13), rgba(255,214,0,0) 30%,
+    rgba(255,255,255,.05) 55%, rgba(255,214,0,0) 76%, rgba(255,214,0,.13));
+  filter:blur(100px);
+  animation:girar 30s linear infinite;
+}
+@keyframes girar{ to{ transform:rotate(360deg); } }
 
 /* Cifras siempre alineadas y legibles.
    OJO: font-feature-settings NO se suma a lo heredado, lo reemplaza.
@@ -68,23 +106,30 @@ body{
 
 img,svg{ max-width:100%; height:auto; }
 
-a{ color:var(--negro); }
+a{ color:var(--tinta); }
 
 .hoja{
   max-width:660px;
   margin:0 auto;
   padding:0 20px;
+  position:relative;
+  z-index:1;
 }
 
 /* ── Barra de arriba ─────────────────────────────────────────── */
 .barra{
-  border-bottom:1px solid var(--borde);
-  background:var(--blanco);
+  position:sticky;
+  top:0;
+  z-index:30;
+  background:rgba(8,9,10,.72);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--linea);
 }
 .barra-in{
   max-width:660px;
   margin:0 auto;
-  padding:14px 20px;
+  padding:13px 20px;
   display:flex;
   align-items:center;
   justify-content:space-between;
@@ -92,132 +137,143 @@ a{ color:var(--negro); }
 }
 .volver{
   font-size:15px;
-  font-weight:600;
+  font-weight:450;
   color:var(--gris);
   text-decoration:none;
   display:inline-flex;
   align-items:center;
-  gap:6px;
+  gap:7px;
   padding:6px 0;
+  transition:color .2s;
 }
-.volver:hover{ color:var(--negro); }
+.volver:hover{ color:var(--tinta); }
 
-/* El logo. Antes era "BO" + un "LT" con fondo amarillo pegado a la letra: el
-   recuadro se chocaba con el texto y quedaba sucio. Ahora es un cuadrado negro
-   con el rayo amarillo adentro —el mismo lenguaje que los íconos— y la palabra
-   al lado, limpia. */
+/* La marca: el rayo amarillo adentro de un círculo, y la palabra al lado. */
 .marca{
   display:inline-flex;
   align-items:center;
   gap:9px;
-  font-size:17px;
-  font-weight:800;
-  letter-spacing:0.02em;
+  font-size:16px;
+  font-weight:700;
+  letter-spacing:.06em;
   text-decoration:none;
-  color:var(--negro);
+  color:var(--tinta);
   white-space:nowrap;
 }
 .marca em{
   font-style:normal;
   width:28px; height:28px;
   flex:0 0 28px;
-  background:var(--negro);
+  background:transparent;
+  border:1px solid var(--linea2);
   color:var(--amarillo);
-  border-radius:8px;
+  border-radius:50%;
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:15px;
-  font-weight:900;
+  font-size:14px;
+  font-weight:600;
   letter-spacing:0;
 }
 
 /* ── Encabezado de página ────────────────────────────────────── */
-.cabecera{ padding:34px 0 6px; }
+.cabecera{ padding:44px 0 6px; }
 
 .tema-icono{
   font-size:40px;
   line-height:1;
   display:block;
-  margin-bottom:16px;
+  margin-bottom:18px;
 }
 
 h1{
-  font-size:2.15rem;
-  line-height:1.12;
-  letter-spacing:-0.02em;
-  font-weight:800;
-  margin:0 0 14px;
+  font-size:2.2rem;
+  line-height:1.08;
+  letter-spacing:-.035em;
+  font-weight:600;
+  margin:0 0 16px;
 }
 
 .bajada{
-  font-size:1.18rem;
+  font-size:1.16rem;
   line-height:1.55;
   color:var(--gris);
-  margin:0 0 10px;
+  font-weight:400;
+  margin:0 0 12px;
 }
 
 .minutos{
-  display:inline-block;
-  background:var(--papel);
-  border:1px solid var(--borde);
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+  background:transparent;
+  border:1px solid var(--linea2);
   border-radius:999px;
-  padding:5px 13px;
-  font-size:.86rem;
-  font-weight:700;
+  padding:7px 17px;
+  font-size:.85rem;
+  font-weight:450;
   color:var(--gris);
-  letter-spacing:.01em;
   margin-bottom:8px;
+}
+.minutos::before{
+  content:"";
+  width:7px; height:7px;
+  border-radius:50%;
+  background:var(--amarillo);
+  flex-shrink:0;
 }
 
 h2{
-  font-size:1.45rem;
-  line-height:1.25;
-  letter-spacing:-0.02em;
-  font-weight:800;
-  margin:46px 0 14px;
+  font-size:1.5rem;
+  line-height:1.2;
+  letter-spacing:-.03em;
+  font-weight:600;
+  margin:52px 0 16px;
 }
 
 h3{
   font-size:1.12rem;
   line-height:1.35;
-  letter-spacing:-0.01em;
-  font-weight:700;
-  margin:28px 0 10px;
+  letter-spacing:-.02em;
+  font-weight:550;
+  margin:30px 0 10px;
 }
 
 p{ margin:0 0 18px; }
 
 p.apoyo{ color:var(--gris); }
 
-strong,b{ font-weight:700; }
+strong,b{ font-weight:600; }
 
+/* Cuando el texto nombra un botón de la app */
 .boton-app{
   display:inline-block;
-  background:var(--negro);
-  color:var(--blanco);
-  border-radius:7px;
-  padding:2px 9px;
-  font-size:.94em;
-  font-weight:600;
+  background:var(--sup2);
+  border:1px solid var(--linea2);
+  color:var(--tinta);
+  border-radius:999px;
+  padding:2px 12px;
+  font-size:.9em;
+  font-weight:500;
   white-space:nowrap;
 }
 .boton-app.amarillo{
   background:var(--amarillo);
-  color:var(--negro);
+  border-color:var(--amarillo);
+  color:#08090A;
 }
 
 /* ── Pasos numerados ─────────────────────────────────────────── */
 ol.pasos{
   list-style:none;
   counter-reset:paso;
-  margin:26px 0 30px;
+  margin:30px 0 34px;
   padding:0;
 }
 ol.pasos > li{
   counter-increment:paso;
   position:relative;
-  padding:0 0 22px 56px;
+  padding:0 0 26px 58px;
   break-inside:avoid;
   page-break-inside:avoid;
 }
@@ -226,32 +282,34 @@ ol.pasos > li::before{
   position:absolute;
   left:0; top:0;
   width:38px; height:38px;
-  background:var(--amarillo);
-  color:var(--negro);
+  background:transparent;
+  border:1px solid var(--linea2);
+  color:var(--amarillo);
   border-radius:50%;
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:1.05rem;
-  font-weight:800;
+  font-size:1rem;
+  font-weight:550;
   font-variant-numeric:tabular-nums;
 }
 ol.pasos > li::after{
   content:"";
   position:absolute;
-  left:18.5px; top:44px; bottom:2px;
+  left:19px; top:46px; bottom:2px;
   width:1px;
-  background:var(--borde);
+  background:var(--linea);
 }
 ol.pasos > li:last-child{ padding-bottom:4px; }
 ol.pasos > li:last-child::after{ display:none; }
 
 ol.pasos .titulo-paso{
   display:block;
-  font-weight:700;
-  font-size:1.07rem;
+  font-weight:550;
+  font-size:1.06rem;
   line-height:1.45;
-  margin:5px 0 4px;
+  margin:6px 0 4px;
+  letter-spacing:-.01em;
 }
 ol.pasos p{ margin:0 0 8px; color:var(--gris); }
 ol.pasos p:last-child{ margin-bottom:0; }
@@ -259,114 +317,134 @@ ol.pasos p:last-child{ margin-bottom:0; }
 /* ── Listas normales ─────────────────────────────────────────── */
 ul.lista{
   list-style:none;
-  margin:0 0 22px;
+  margin:0 0 24px;
   padding:0;
 }
 ul.lista li{
   position:relative;
-  padding:0 0 12px 26px;
+  padding:0 0 13px 26px;
   break-inside:avoid;
 }
 ul.lista li::before{
   content:"";
   position:absolute;
   left:2px; top:11px;
-  width:9px; height:9px;
+  width:8px; height:8px;
   background:var(--amarillo);
   border-radius:50%;
 }
 
 /* ── Recuadros ───────────────────────────────────────────────── */
 .caja{
-  background:var(--papel);
-  border:1px solid var(--borde);
-  border-radius:14px;
-  padding:20px 22px;
-  margin:0 0 26px;
+  background:var(--sup);
+  border:1px solid var(--linea);
+  border-radius:26px;
+  padding:22px 24px;
+  margin:0 0 28px;
   break-inside:avoid;
   page-break-inside:avoid;
 }
 .caja > :last-child{ margin-bottom:0; }
 .caja .rotulo{
-  display:block;
-  font-size:.78rem;
-  font-weight:800;
-  letter-spacing:.09em;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:.68rem;
+  font-weight:600;
+  letter-spacing:.16em;
   text-transform:uppercase;
-  color:var(--gris);
-  margin-bottom:9px;
+  color:var(--tenue);
+  margin-bottom:11px;
+}
+.caja .rotulo::before{
+  content:"";
+  width:7px; height:7px;
+  border-radius:50%;
+  background:var(--amarillo);
+  flex-shrink:0;
 }
 
+/* "Ojo con esto": lo único que se pinta de rojo en todo el sitio */
 .caja.ojo{
-  background:var(--blanco);
-  border:2px solid var(--negro);
-  border-left-width:8px;
+  background:rgba(255,107,107,.07);
+  border:1px solid rgba(255,107,107,.3);
 }
-.caja.ojo .rotulo{ color:var(--negro); }
+.caja.ojo .rotulo{ color:var(--rojo); }
+.caja.ojo .rotulo::before{ background:var(--rojo); }
 
+/* El destaque sí va en amarillo pleno: es uno por página */
 .caja.destaque{
   background:var(--amarillo);
   border-color:var(--amarillo);
+  color:#08090A;
 }
-.caja.destaque .rotulo{ color:var(--negro); }
+.caja.destaque .rotulo,
+.caja.destaque .rotulo::before{ color:#08090A; }
+.caja.destaque .rotulo::before{ background:#08090A; }
+.caja.destaque a{ color:#08090A; }
 
-/* Bloque de "esto es lo importante" con barra amarilla */
+/* Bloque de "esto es lo importante" */
 .clave{
-  border-left:8px solid var(--amarillo);
-  background:var(--papel);
-  border-radius:0 14px 14px 0;
-  padding:18px 20px;
-  margin:0 0 26px;
+  border:1px solid var(--linea);
+  border-left:3px solid var(--amarillo);
+  background:var(--sup);
+  border-radius:6px 26px 26px 6px;
+  padding:20px 24px;
+  margin:0 0 28px;
   break-inside:avoid;
 }
 .clave > :last-child{ margin-bottom:0; }
 
 /* Cita de pantalla de la app */
 .pantalla{
-  border:1px solid var(--borde);
-  border-radius:14px;
+  border:1px solid var(--linea);
+  border-radius:26px;
   overflow:hidden;
-  margin:0 0 26px;
+  margin:0 0 28px;
   break-inside:avoid;
 }
 .pantalla-top{
-  background:var(--negro);
-  color:var(--blanco);
-  font-size:.8rem;
-  font-weight:700;
-  letter-spacing:.06em;
+  background:var(--sup2);
+  color:var(--gris);
+  font-size:.68rem;
+  font-weight:600;
+  letter-spacing:.16em;
   text-transform:uppercase;
-  padding:9px 16px;
+  padding:11px 20px;
+  border-bottom:1px solid var(--linea);
 }
-.pantalla-cuerpo{ padding:18px 18px 4px; background:var(--papel); }
+.pantalla-cuerpo{ padding:20px 20px 6px; background:var(--sup); }
 .pantalla-cuerpo p{ margin-bottom:14px; }
 
+/* El código de la puerta, como en la página del cliente */
 .codigo-demo{
-  font-size:2.4rem;
-  font-weight:800;
-  letter-spacing:.28em;
+  font-size:2.6rem;
+  font-weight:600;
+  letter-spacing:.3em;
   text-align:center;
+  color:var(--amarillo);
   font-variant-numeric:tabular-nums;
-  margin:6px 0 4px;
-  padding-left:.28em;
+  margin:8px 0 6px;
+  padding-left:.3em;
 }
 
 /* ── Desplegable (iPhone / preguntas) ────────────────────────── */
 details.desplegable{
-  border:2px solid var(--negro);
-  border-radius:14px;
-  margin:0 0 18px;
-  background:var(--blanco);
+  border:1px solid var(--linea2);
+  border-radius:26px;
+  margin:0 0 14px;
+  background:var(--sup);
   break-inside:avoid;
   page-break-inside:avoid;
 }
 details.desplegable > summary{
   list-style:none;
   cursor:pointer;
-  padding:17px 20px;
-  font-weight:700;
-  font-size:1.08rem;
+  padding:18px 22px;
+  font-weight:550;
+  font-size:1.05rem;
   line-height:1.4;
+  letter-spacing:-.01em;
   display:flex;
   align-items:center;
   justify-content:space-between;
@@ -377,145 +455,146 @@ details.desplegable > summary::after{
   content:"+";
   flex:0 0 28px;
   width:28px; height:28px;
-  background:var(--amarillo);
-  color:var(--negro);
+  background:transparent;
+  border:1px solid var(--linea2);
+  color:var(--amarillo);
   border-radius:50%;
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:1.25rem;
-  font-weight:800;
+  font-size:1.15rem;
+  font-weight:500;
   line-height:1;
+  transition:border-color .2s;
 }
+details.desplegable > summary:hover::after{ border-color:var(--amarillo); }
 details.desplegable[open] > summary::after{ content:"\2013"; }
-details.desplegable[open] > summary{ border-bottom:1px solid var(--borde); }
-.desplegable-cuerpo{ padding:18px 20px 4px; }
+details.desplegable[open] > summary{ border-bottom:1px solid var(--linea); }
+.desplegable-cuerpo{ padding:18px 22px 4px; }
+.desplegable-cuerpo p{ color:var(--gris); }
 
 /* Variante liviana para las preguntas frecuentes */
 details.pregunta{
   border:0;
-  border-bottom:1px solid var(--borde);
+  border-bottom:1px solid var(--linea);
   border-radius:0;
   margin:0;
+  background:none;
 }
-details.pregunta > summary{ padding:16px 2px; font-size:1.05rem; }
+details.pregunta > summary{ padding:17px 2px; font-size:1.03rem; }
 details.pregunta[open] > summary{ border-bottom:0; padding-bottom:4px; }
-details.pregunta .desplegable-cuerpo{ padding:0 2px 14px; }
-details.pregunta .desplegable-cuerpo p{ color:var(--gris); }
+details.pregunta .desplegable-cuerpo{ padding:0 2px 16px; }
 
-.grupo-preguntas{ margin:0 0 34px; }
+.grupo-preguntas{ margin:0 0 36px; }
 
 /* ── Índice: tarjetas ────────────────────────────────────────── */
 .tarjetas{
   display:grid;
   gap:14px;
-  margin:0 0 40px;
+  margin:0 0 44px;
   padding:0;
   list-style:none;
 }
 .tarjeta{
   display:flex;
   align-items:flex-start;
-  gap:16px;
-  border:1px solid var(--borde);
-  border-radius:16px;
-  padding:20px;
+  gap:17px;
+  border:1px solid var(--linea);
+  border-radius:28px;
+  padding:22px;
   text-decoration:none;
-  color:var(--negro);
-  background:var(--blanco);
+  color:var(--tinta);
+  background:var(--sup);
   break-inside:avoid;
+  transition:transform .25s cubic-bezier(.16,.9,.3,1), border-color .25s;
 }
-.tarjeta:hover{ border-color:var(--negro); background:var(--papel); }
-/* Maxi (6-ago-2026): "deberían ser cuadros negros con el dibujo amarillo
-   adentro, para que los chips se noten de verdad".
-   Tenía razón: el cuadro amarillo con el emoji encima se lavaba contra el
-   blanco de la tarjeta y no se leía como un ícono, se leía como una mancha.
-   En negro, el cuadro tiene peso y el dibujo salta. */
+.tarjeta:hover{ border-color:var(--linea2); transform:translateY(-3px); }
 .tarjeta .ico{
-  flex:0 0 54px;
-  width:54px; height:54px;
-  background:var(--negro);
-  border-radius:14px;
+  flex:0 0 52px;
+  width:52px; height:52px;
+  background:transparent;
+  border:1px solid var(--linea2);
+  border-radius:50%;
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:26px;
+  font-size:24px;
   line-height:1;
-  /* Los emojis vienen con su propio color. Se pasan a escala de grises y se
-     tiñen de amarillo para que respeten la paleta y no metan un cuarto color. */
-  filter:grayscale(1) brightness(0) invert(83%) sepia(63%) saturate(2200%)
-         hue-rotate(1deg) brightness(105%) contrast(103%);
+  transition:border-color .25s;
 }
-/* Al pasar el mouse, el cuadro se invierte: amarillo con el dibujo negro. */
-.tarjeta:hover .ico{
-  background:var(--amarillo);
-  filter:grayscale(1) brightness(0);
-}
+.tarjeta .ico svg{ width:24px; height:24px; }
+.tarjeta:hover .ico{ border-color:var(--amarillo); }
 .tarjeta .txt strong{
   display:block;
-  font-size:1.14rem;
-  font-weight:700;
-  letter-spacing:-0.01em;
+  font-size:1.1rem;
+  font-weight:550;
+  letter-spacing:-.02em;
   line-height:1.3;
-  margin-bottom:3px;
+  margin-bottom:4px;
 }
 .tarjeta .txt span{
   display:block;
   color:var(--gris);
-  font-size:.99rem;
+  font-size:.97rem;
   line-height:1.5;
+  font-weight:400;
 }
 .tarjeta.principal{
-  border:2px solid var(--negro);
+  border-color:rgba(255,214,0,.45);
 }
+/* 🔴 `inline-block` no alcanza: dentro de un contenedor de bloque la
+   etiqueta se estiraba de punta a punta y quedaba una barra amarilla
+   cruzando la tarjeta. Con `width:fit-content` mide lo que dice. */
 .etiqueta{
   display:inline-block;
+  width:fit-content;
   background:var(--amarillo);
-  color:var(--negro);
-  font-size:.72rem;
-  font-weight:800;
-  letter-spacing:.08em;
+  color:#08090A;
+  font-size:.68rem;
+  font-weight:600;
+  letter-spacing:.14em;
   text-transform:uppercase;
-  border-radius:5px;
-  padding:2px 7px;
-  margin-bottom:6px;
+  border-radius:999px;
+  padding:3px 11px;
+  margin-bottom:8px;
 }
 
 /* ── Botón de PDF ────────────────────────────────────────────── */
 .pdf-zona{
-  margin:38px 0 10px;
-  padding:22px 0 0;
-  border-top:1px solid var(--borde);
+  margin:42px 0 10px;
+  padding:26px 0 0;
+  border-top:1px solid var(--linea);
   break-inside:avoid;
 }
 .btn-pdf{
   display:inline-flex;
   align-items:center;
-  gap:9px;
-  background:var(--blanco);
-  color:var(--negro);
-  border:2px solid var(--negro);
-  border-radius:12px;
-  padding:13px 20px;
-  font-size:1.02rem;
-  font-weight:700;
+  gap:10px;
+  background:transparent;
+  color:var(--tinta);
+  border:1px solid var(--linea2);
+  border-radius:999px;
+  padding:14px 24px;
+  font-size:1rem;
+  font-weight:500;
   font-family:inherit;
   line-height:1.2;
   cursor:pointer;
+  transition:border-color .2s, transform .22s cubic-bezier(.16,.9,.3,1);
 }
-.btn-pdf:hover{ background:var(--amarillo); }
+.btn-pdf:hover{ border-color:var(--tinta); transform:translateY(-2px); }
 .pdf-como{
   font-size:.9rem;
   line-height:1.55;
   color:var(--tenue);
-  margin:12px 0 0;
+  margin:14px 0 0;
 }
 
 /* ── Soporte ─────────────────────────────────────────────────── */
 .soporte{
-  border-top:1px solid var(--borde);
-  margin-top:34px;
-  padding-top:30px;
+  border-top:1px solid var(--linea);
+  margin-top:38px;
+  padding-top:32px;
   break-inside:avoid;
 }
 .soporte h2{ margin-top:0; }
@@ -523,16 +602,17 @@ details.pregunta .desplegable-cuerpo p{ color:var(--gris); }
   display:inline-flex;
   align-items:center;
   gap:10px;
-  background:var(--negro);
-  color:var(--blanco);
+  background:#25D366;
+  color:#fff;
   text-decoration:none;
-  border-radius:12px;
-  padding:15px 22px;
-  font-size:1.05rem;
-  font-weight:700;
+  border-radius:999px;
+  padding:15px 26px;
+  font-size:1.02rem;
+  font-weight:600;
   line-height:1.2;
+  transition:transform .22s cubic-bezier(.16,.9,.3,1), box-shadow .22s;
 }
-.btn-wa:hover{ background:#2a2a2e; }
+.btn-wa:hover{ transform:translateY(-2px); box-shadow:0 12px 32px rgba(37,211,102,.28); }
 .tel-papel{
   display:none;
   font-variant-numeric:tabular-nums;
@@ -540,44 +620,56 @@ details.pregunta .desplegable-cuerpo p{ color:var(--gris); }
 
 /* ── Relacionados y pie ──────────────────────────────────────── */
 .relacionados{
-  margin:38px 0 0;
-  padding-top:26px;
-  border-top:1px solid var(--borde);
+  margin:42px 0 0;
+  padding-top:28px;
+  border-top:1px solid var(--linea);
 }
 .relacionados .rotulo{
-  display:block;
-  font-size:.78rem;
-  font-weight:800;
-  letter-spacing:.09em;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:.68rem;
+  font-weight:600;
+  letter-spacing:.16em;
   text-transform:uppercase;
   color:var(--tenue);
   margin-bottom:14px;
 }
+.relacionados .rotulo::before{
+  content:"";
+  width:7px; height:7px;
+  border-radius:50%;
+  background:var(--amarillo);
+  flex-shrink:0;
+}
 .relacionados a{
   display:block;
-  padding:13px 0;
-  border-bottom:1px solid var(--borde);
+  padding:15px 0;
+  border-bottom:1px solid var(--linea);
   text-decoration:none;
-  font-weight:600;
-  color:var(--negro);
+  font-weight:500;
+  color:var(--tinta);
+  transition:color .2s;
 }
+.relacionados a:hover{ color:var(--amarillo); }
 .relacionados a span{
   display:block;
   font-weight:400;
-  font-size:.95rem;
+  font-size:.94rem;
   color:var(--gris);
 }
-.relacionados a:first-of-type{ border-top:1px solid var(--borde); }
+.relacionados a:first-of-type{ border-top:1px solid var(--linea); }
 
 .pie{
-  margin:46px 0 0;
-  padding:26px 0 46px;
-  border-top:1px solid var(--borde);
+  margin:50px 0 0;
+  padding:28px 0 50px;
+  border-top:1px solid var(--linea);
   color:var(--tenue);
   font-size:.9rem;
   line-height:1.6;
 }
 .pie a{ color:var(--gris); }
+.pie a:hover{ color:var(--tinta); }
 
 /* Sólo para el papel */
 .solo-papel{ display:none; }
@@ -585,53 +677,52 @@ details.pregunta .desplegable-cuerpo p{ color:var(--gris); }
 /* ── Pantallas anchas ────────────────────────────────────────── */
 @media (min-width:720px){
   body{ font-size:17.5px; }
-  h1{ font-size:2.6rem; }
-  .cabecera{ padding:48px 0 6px; }
+  h1{ font-size:2.7rem; }
+  .cabecera{ padding:58px 0 6px; }
   .tarjetas{ grid-template-columns:1fr 1fr; }
   .tarjeta.ancha{ grid-column:1 / -1; }
 }
 
 /* ── El índice usa más ancho que las páginas de lectura ──────────
-   Maxi (6-ago-2026): "los costados están vacíos, y donde empieza el título
-   igual. Está flojo".
-   Tenía razón, y el motivo es que 660px es el ancho correcto para LEER —unos
-   65 caracteres por renglón— pero es angosto para una grilla de tarjetas: deja
-   dos franjas blancas enormes a los lados y el título arrancando en el medio
-   de la nada. Las páginas de texto siguen en 660; el índice se ensancha. */
+   660px es el ancho correcto para LEER —unos 65 caracteres por
+   renglón— pero es angosto para una grilla de tarjetas. Las páginas
+   de texto siguen en 660; el índice se ensancha. */
 @media (min-width:880px){
   body.indice .hoja,
   body.indice .barra-in{ max-width:1000px; }
-  body.indice h1{ font-size:3.2rem; }
-  body.indice .cabecera{ padding:64px 0 10px; }
-  body.indice .bajada{ font-size:1.25rem; max-width:52ch; }
+  body.indice h1{ font-size:3.4rem; }
+  body.indice .cabecera{ padding:76px 0 14px; }
+  body.indice .bajada{ font-size:1.22rem; max-width:52ch; }
   body.indice .tarjetas{ grid-template-columns:1fr 1fr 1fr; gap:18px; }
   body.indice .tarjeta.ancha{ grid-column:1 / -1; }
 }
 
-/* Y una franja negra detrás del título: le da peso al arranque y separa la
-   portada del listado, que era lo que se sentía flojo. */
-body.indice .cabecera{
-  background:var(--negro);
-  color:var(--blanco);
-  margin:0 -20px 30px;
-  padding-left:20px;
-  padding-right:20px;
-  border-radius:0 0 22px 22px;
-}
-body.indice .cabecera h1{ color:var(--blanco); }
+/* En oscuro, la portada del índice ya no necesita franja negra: el fondo
+   ES negro. Lo que le da peso es el amarillo en una palabra del título. */
 body.indice .cabecera h1 em{
   font-style:normal;
   color:var(--amarillo);
 }
-body.indice .cabecera .bajada{ color:#C9C9CF; }
-@media (min-width:880px){
-  body.indice .cabecera{ margin-left:-28px; margin-right:-28px; padding:64px 28px 40px; }
+
+/* ── Movimiento ──────────────────────────────────────────────── */
+.tarjeta, .caja, .clave, .pantalla, ol.pasos > li{
+  animation:aparecer .7s cubic-bezier(.16,.9,.3,1) both;
+}
+@keyframes aparecer{
+  from{ opacity:0; transform:translateY(18px); }
+  to{ opacity:1; transform:none; }
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{ animation:none !important; }
+  html{ scroll-behavior:auto; }
 }
 
 /* ══════════════════════════════════════════════════════════════
    PAPEL / PDF
-   Un tema = un PDF. Autosuficiente: título, URL de origen y el
-   teléfono de soporte escrito. Sin navegación ni botones.
+   🔴 Acá vuelve todo a NEGRO SOBRE BLANCO. Un PDF que alguien
+   imprime no puede salir con fondo negro: gasta un cartucho y se
+   lee peor. Un tema = un PDF, autosuficiente.
    ══════════════════════════════════════════════════════════════ */
 @page{
   margin:16mm 14mm 15mm;
@@ -644,6 +735,7 @@ body.indice .cabecera .bajada{ color:#C9C9CF; }
     font-size:11.5pt;
     line-height:1.5;
   }
+  body::before{ display:none !important; }   /* el halo no va al papel */
 
   /* Fuera del papel */
   .barra,
@@ -665,9 +757,9 @@ body.indice .cabecera .bajada{ color:#C9C9CF; }
   .cabecera{ padding:0 0 4px; }
   .tema-icono{ display:none; }
 
-  h1{ font-size:20pt; margin:0 0 8px; }
-  h2{ font-size:13.5pt; margin:20px 0 8px; page-break-after:avoid; break-after:avoid; }
-  h3{ font-size:11.8pt; margin:14px 0 6px; page-break-after:avoid; break-after:avoid; }
+  h1{ font-size:20pt; margin:0 0 8px; font-weight:700; }
+  h2{ font-size:13.5pt; margin:20px 0 8px; font-weight:700; page-break-after:avoid; break-after:avoid; }
+  h3{ font-size:11.8pt; margin:14px 0 6px; font-weight:700; page-break-after:avoid; break-after:avoid; }
   .bajada{ font-size:12pt; color:#000 !important; }
   .minutos{
     background:none !important;
@@ -676,6 +768,7 @@ body.indice .cabecera .bajada{ color:#C9C9CF; }
     color:#000 !important;
     font-size:10pt;
   }
+  .minutos::before{ display:none; }
 
   /* Cabecera del documento impreso */
   .papel-cabecera{
@@ -722,19 +815,22 @@ body.indice .cabecera .bajada{ color:#C9C9CF; }
     border-bottom:.5pt solid #999 !important;
     border-radius:0 !important;
     margin-bottom:6px;
+    background:none !important;
   }
   details.desplegable > summary,
   details.pregunta > summary{
     padding:6px 0 2px;
     font-size:11.5pt;
+    font-weight:700;
     border:0 !important;
   }
   details.desplegable > summary::after{ display:none !important; }
   .desplegable-cuerpo{ padding:0 0 8px; }
+  .desplegable-cuerpo p{ color:#000 !important; }
   details:not([open]) > .desplegable-cuerpo{ display:block !important; }
 
   /* Todo en negro sobre blanco, sin fondos que gasten tinta */
-  .caja, .clave, .pantalla, .pantalla-cuerpo, .tarjeta, .minutos{
+  .caja, .clave, .pantalla, .pantalla-cuerpo, .tarjeta, .minutos, .boton-app{
     background:#FFFFFF !important;
     color:#000 !important;
   }
@@ -758,15 +854,17 @@ body.indice .cabecera .bajada{ color:#C9C9CF; }
   .pantalla-cuerpo{ padding:8px 0 0; }
   .caja.ojo, .caja.destaque{
     border:1.5pt solid #000 !important;
-  }
-  .caja .rotulo, .relacionados .rotulo{ color:#000 !important; }
-  p.apoyo, .tarjeta .txt span, ol.pasos p{ color:#000 !important; }
-
-  .boton-app{
     background:#FFF !important;
     color:#000 !important;
-    border:.5pt solid #000;
-    padding:0 4px;
+  }
+  .caja .rotulo, .relacionados .rotulo{ color:#000 !important; }
+  .caja .rotulo::before, .relacionados .rotulo::before{ display:none; }
+  p.apoyo, .tarjeta .txt span, ol.pasos p{ color:#000 !important; }
+  .codigo-demo{ color:#000 !important; }
+
+  .boton-app{
+    border:.5pt solid #000 !important;
+    padding:0 5px;
     border-radius:3px;
   }
 
@@ -777,6 +875,7 @@ body.indice .cabecera .bajada{ color:#C9C9CF; }
     color:#000 !important;
     border:1pt solid #000;
     font-size:11pt;
+    font-weight:700;
   }
   ol.pasos > li::after{ display:none; }
   ul.lista li::before{ background:#000 !important; width:5px; height:5px; top:9px; }
@@ -801,29 +900,41 @@ body.indice .cabecera .bajada{ color:#C9C9CF; }
    Para las altas en la calle: se imprime, se pega en el local, o
    se muestra desde el celular. El código está dibujado en SVG
    adentro del HTML: no se descarga nada de ningún lado.
+   🔴 Este cartel se imprime: va en BLANCO aunque la página sea
+   negra, porque su destino es una hoja A4.
    ══════════════════════════════════════════════════════════════ */
 .cartel{
-  border-top:1px solid var(--borde);
-  margin-top:34px;
-  padding-top:30px;
+  border-top:1px solid var(--linea);
+  margin-top:38px;
+  padding-top:32px;
   break-inside:avoid;
 }
 .cartel h2{ margin-top:0; }
 .cartel .rotulo{
-  display:block;
-  font-size:.78rem;
-  font-weight:800;
-  letter-spacing:.09em;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:.68rem;
+  font-weight:600;
+  letter-spacing:.16em;
   text-transform:uppercase;
   color:var(--tenue);
   margin-bottom:12px;
 }
+.cartel .rotulo::before{
+  content:"";
+  width:7px; height:7px;
+  border-radius:50%;
+  background:var(--amarillo);
+  flex-shrink:0;
+}
 
 .cartel-hoja{
-  border:2px solid var(--negro);
-  border-radius:18px;
-  background:var(--blanco);
-  padding:28px 24px 24px;
+  border:1px solid var(--linea2);
+  border-radius:28px;
+  background:#FFFFFF;
+  color:#08090A;
+  padding:30px 26px 26px;
   margin:0 0 22px;
   max-width:440px;
   text-align:center;
@@ -836,58 +947,59 @@ body.indice .cabecera .bajada{ color:#C9C9CF; }
   align-items:center;
   gap:9px;
   font-size:1.05rem;
-  font-weight:800;
-  letter-spacing:.02em;
+  font-weight:700;
+  letter-spacing:.04em;
+  color:#08090A;
 }
 .cartel-marca em{
   font-style:normal;
   width:28px; height:28px;
   flex:0 0 28px;
-  background:var(--negro);
+  background:#08090A;
   color:var(--amarillo);
-  border-radius:8px;
+  border-radius:50%;
   display:flex;
   align-items:center;
   justify-content:center;
   font-size:15px;
-  font-weight:900;
-  /* El cuadro negro es la marca: que se imprima aunque el navegador
+  font-weight:700;
+  /* El círculo negro es la marca: que se imprima aunque el navegador
      venga con los fondos apagados para ahorrar tinta. */
   -webkit-print-color-adjust:exact;
   print-color-adjust:exact;
 }
 
 .cartel-titulo{
-  font-size:1.16rem;
-  font-weight:800;
-  line-height:1.3;
-  letter-spacing:-.01em;
-  margin:16px 0 0;
+  font-size:1.2rem;
+  font-weight:600;
+  line-height:1.25;
+  letter-spacing:-.02em;
+  margin:18px 0 0;
 }
 
 .cartel-qr{
   width:190px;
-  margin:18px auto 14px;
+  margin:20px auto 14px;
 }
 .cartel-qr svg{ display:block; width:100%; height:auto; }
 
 .cartel-url{
-  font-size:1.1rem;
-  font-weight:800;
+  font-size:1.12rem;
+  font-weight:600;
   letter-spacing:-.01em;
   margin:0 0 10px;
 }
 .cartel-pie{
   font-size:.88rem;
   line-height:1.5;
-  color:var(--gris);
+  color:#4A4A52;
   margin:0;
 }
 
 /* ══════════════════════════════════════════════════════════════
    BUSCADOR DE LAS PREGUNTAS FRECUENTES
    ══════════════════════════════════════════════════════════════ */
-.buscador{ margin:26px 0 30px; }
+.buscador{ margin:28px 0 32px; }
 
 .buscador-campo{
   width:100%;
@@ -896,34 +1008,37 @@ body.indice .cabecera .bajada{ color:#C9C9CF; }
      campo y descoloca toda la página. */
   font-size:1.02rem;
   line-height:1.3;
-  color:var(--negro);
-  background:var(--blanco);
-  border:2px solid var(--negro);
-  border-radius:12px;
-  padding:14px 16px;
+  color:var(--tinta);
+  background:var(--sup);
+  border:1px solid var(--linea2);
+  border-radius:999px;
+  padding:15px 22px;
   -webkit-appearance:none;
   appearance:none;
+  transition:border-color .2s, background .2s;
 }
 .buscador-campo::placeholder{ color:var(--tenue); opacity:1; }
 .buscador-campo:focus{
-  outline:3px solid var(--amarillo);
-  outline-offset:1px;
+  outline:none;
+  border-color:rgba(255,214,0,.55);
+  background:var(--sup2);
 }
 /* La crucecita que Chrome le pone a los input de tipo search */
 .buscador-campo::-webkit-search-cancel-button{ cursor:pointer; }
 
 .buscador-cuenta{
   font-size:.88rem;
-  font-weight:600;
+  font-weight:450;
   color:var(--gris);
-  margin:10px 0 0;
+  margin:12px 0 0;
 }
 
 .sin-resultados{
-  border:2px solid var(--negro);
-  border-radius:14px;
-  padding:24px 22px;
-  margin:0 0 30px;
+  border:1px solid var(--linea2);
+  border-radius:26px;
+  padding:26px 24px;
+  margin:0 0 32px;
+  background:var(--sup);
 }
 .sin-resultados h2{ margin:0 0 8px; font-size:1.2rem; }
 .sin-resultados p{ margin:0 0 18px; }
@@ -977,7 +1092,6 @@ body.indice .cabecera .bajada{ color:#C9C9CF; }
   .cartel-marca em{
     width:30pt; height:30pt; flex:0 0 30pt;
     font-size:17pt;
-    border-radius:6pt;
   }
   .cartel-titulo{ font-size:21pt; line-height:1.25; margin-top:9mm; }
   .cartel-qr{ width:92mm; margin:9mm auto 7mm; }
