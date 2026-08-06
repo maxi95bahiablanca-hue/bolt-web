@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- ═══════════════════════════════════════════════════════════════════════
+     PRESUPUESTO PÚBLICO — bolt.com.ar/p/?t=TOKEN
+     Lo abre el CLIENTE desde WhatsApp. No tiene cuenta ni tiene por qué
+     tenerla: el token es lo único que da acceso (migración 055_mi_negocio).
+
+     REGLAS QUE NO SE TOCAN:
+     1. El token NO va en el <title>, ni en og:*, ni en ningún texto visible:
+        cualquiera de esos lugares se comparte solo (captura, historial,
+        "compartir página") y el token ES la llave.
+     2. referrer=no-referrer para que el token no viaje en el Referer cuando
+        el cliente toca el link a bolt.com.ar o el de WhatsApp.
+     3. noindex: esto no se busca en Google.
+     4. Todo lo que viene de la base entra por textContent o por esc().
+     5. Fondo claro: es un documento que se lee antes de gastar plata y que
+        se imprime. Nada de dark theme acá.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<title>Presupuesto</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#ffffff">
+<meta property="og:title" content="Presupuesto">
+<meta property="og:description" content="Abrí el link para ver el detalle.">
+<link rel="icon" href="../logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --acento:#FFD600;          /* BOLT por defecto; en Pro lo pisa el color de la empresa */
+    --acento-tx:#0A0A0A;       /* texto que se lee ARRIBA del acento */
+    --acento-suave:rgba(255,214,0,.14);
+    --tinta:#111417;
+    --tinta2:#41474d;
+    --gris:#6b7280;
+    --gris2:#9aa1a9;
+    --linea:#e5e7eb;
+    --papel:#ffffff;
+    --fondo:#f1f3f6;
+  }
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--fondo);color:var(--tinta);line-height:1.6;
+    padding:18px 14px 40px;
+  }
+  a{color:inherit}
+
+  /* ── El documento ─────────────────────────────────────────────────────── */
+  .doc{
+    max-width:720px;margin:0 auto;background:var(--papel);
+    border:1px solid var(--linea);border-radius:14px;overflow:hidden;
+    box-shadow:0 1px 2px rgba(16,24,40,.04),0 12px 32px rgba(16,24,40,.07);
+  }
+  .barra{height:6px;background:var(--acento)}
+  .cuerpo{padding:26px 22px 28px}
+  @media(min-width:640px){.cuerpo{padding:36px 40px 38px}}
+
+  /* Encabezado */
+  .enc{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+  .emp{display:flex;gap:13px;align-items:center;min-width:0}
+  .emp-logo{width:54px;height:54px;object-fit:contain;border-radius:10px;flex-shrink:0;background:#fff}
+  .emp-ini{
+    width:54px;height:54px;border-radius:12px;flex-shrink:0;
+    background:var(--acento);color:var(--acento-tx);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:900;font-size:1.5rem;line-height:1;
+  }
+  .emp-nom{font-size:1.28rem;font-weight:900;letter-spacing:-.3px;line-height:1.25;word-break:break-word}
+  .emp-sub{font-size:.85rem;color:var(--gris);font-weight:600}
+  .emp-sub a{color:var(--gris);text-decoration:none}
+
+  .sello{text-align:right;flex-shrink:0}
+  .sello .rot{font-size:.7rem;font-weight:900;letter-spacing:1.6px;color:var(--gris2);text-transform:uppercase}
+  .sello .num{font-size:1.5rem;font-weight:900;line-height:1.15;letter-spacing:-.5px}
+  .sello .fec{font-size:.82rem;color:var(--gris);font-weight:600}
+  @media(max-width:420px){
+    .enc{flex-direction:column;gap:14px}
+    .sello{text-align:left}
+  }
+
+  .sep{height:1px;background:var(--linea);margin:22px 0}
+
+  /* Datos (Para / Validez) */
+  .datos{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px 22px}
+  .dato .k{font-size:.7rem;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:var(--gris2)}
+  .dato .v{font-size:1rem;font-weight:700;color:var(--tinta);word-break:break-word}
+
+  /* Bloques de texto */
+  .bloque{margin-top:24px}
+  .rotulo{font-size:.7rem;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:var(--gris2);margin-bottom:7px}
+  .texto{font-size:1rem;color:var(--tinta2);white-space:pre-wrap;word-break:break-word}
+
+  /* Ítems — lista tipo tabla, se lee igual de bien en un celular */
+  .items{margin-top:10px;border-top:2px solid var(--linea)}
+  .it-enc{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--linea)}
+  .it-enc span{font-size:.7rem;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:var(--gris2)}
+  .it{display:flex;gap:14px;justify-content:space-between;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--linea)}
+  .it-d{font-size:.98rem;font-weight:700;word-break:break-word}
+  .it-c{font-size:.84rem;color:var(--gris);font-weight:600;margin-top:1px}
+  .it-s{font-size:1rem;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+
+  /* Total */
+  .total{
+    margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;
+    background:var(--acento-suave);border-left:5px solid var(--acento);
+    border-radius:0 12px 12px 0;padding:18px 20px;flex-wrap:wrap;
+  }
+  .total .t-k{font-size:.82rem;font-weight:900;letter-spacing:1.4px;text-transform:uppercase;color:var(--tinta2)}
+  .total .t-v{font-size:2rem;font-weight:900;letter-spacing:-1px;line-height:1.1;font-variant-numeric:tabular-nums}
+  @media(max-width:400px){.total .t-v{font-size:1.7rem}}
+
+  /* Estado */
+  .badge{
+    display:inline-flex;align-items:center;gap:7px;margin-top:20px;
+    font-size:.9rem;font-weight:800;padding:10px 16px;border-radius:12px;border:1.5px solid;
+  }
+  .badge.ok{background:#eafaf0;border-color:#8fd7ac;color:#166534}
+  .badge.no{background:#f4f5f7;border-color:#d5d9de;color:#4b5563}
+
+  /* Acciones */
+  .acciones{margin-top:26px}
+  .fila{display:flex;gap:11px;flex-wrap:wrap}
+  .btn{
+    flex:1 1 200px;display:flex;align-items:center;justify-content:center;gap:8px;
+    font-family:inherit;font-size:1rem;font-weight:900;padding:15px 18px;
+    border-radius:13px;border:1.5px solid transparent;cursor:pointer;transition:.15s;
+    text-decoration:none;text-align:center;
+  }
+  .btn-si{background:var(--acento);color:var(--acento-tx);box-shadow:0 3px 12px rgba(16,24,40,.10)}
+  .btn-si:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(16,24,40,.16)}
+  .btn-no{background:#fff;color:var(--tinta2);border-color:#d5d9de}
+  .btn-no:hover{border-color:var(--gris)}
+  .btn-wa{background:#25D366;color:#fff}
+  .btn-wa:hover{transform:translateY(-1px)}
+  .btn-gris{background:#fff;color:var(--gris);border-color:var(--linea);font-weight:700;font-size:.92rem;padding:12px 16px;flex:0 1 auto}
+  .btn:disabled{opacity:.55;cursor:default;transform:none;box-shadow:none}
+  .aviso{margin-top:12px;font-size:.86rem;font-weight:700;text-align:center;min-height:18px}
+  .aviso.err{color:#b91c1c}
+  .aviso.ok{color:#166534}
+
+  /* Confirmación de rechazo */
+  .confirmar{background:#f8f9fb;border:1px solid var(--linea);border-radius:13px;padding:16px;margin-top:4px}
+  .confirmar p{font-size:.94rem;font-weight:700;color:var(--tinta2);margin-bottom:12px}
+
+  /* Respuesta enviada */
+  .respuesta{margin-top:24px;border:1.5px solid #8fd7ac;background:#f2fbf6;border-radius:14px;padding:20px;text-align:center}
+  .respuesta.neutro{border-color:#d5d9de;background:#f7f8fa}
+  .respuesta .em{font-size:2.2rem;line-height:1}
+  .respuesta h3{font-size:1.2rem;font-weight:900;margin:6px 0 4px}
+  .respuesta p{font-size:.95rem;color:var(--tinta2);margin-bottom:14px}
+
+  /* Pie del documento (datos fiscales, contacto) */
+  .pie-doc{margin-top:26px;padding-top:16px;border-top:1px solid var(--linea);font-size:.82rem;color:var(--gris);white-space:pre-wrap;word-break:break-word}
+
+  /* Pie BOLT — sólo plan free, y bien discreto */
+  .bolt{max-width:720px;margin:20px auto 0;text-align:center}
+  .bolt a.b1{font-size:.82rem;color:#6b7280;text-decoration:none;font-weight:700}
+  .bolt a.b1 b{color:#111417}
+  .bolt .b2{display:block;margin-top:5px;font-size:.74rem;color:#9aa1a9;text-decoration:none;font-weight:600}
+  .bolt .b2:hover{text-decoration:underline}
+
+  /* Estados de carga / error */
+  .estado-pag{max-width:520px;margin:60px auto;text-align:center;padding:34px 22px;background:var(--papel);border:1px solid var(--linea);border-radius:16px}
+  .estado-pag .em{font-size:2.6rem}
+  .estado-pag h2{font-size:1.25rem;font-weight:900;margin:10px 0 6px}
+  .estado-pag p{color:var(--gris);font-size:.95rem}
+  .spin{width:30px;height:30px;border:3px solid var(--linea);border-top-color:#c7ccd3;border-radius:50%;margin:0 auto 12px;animation:gira .8s linear infinite}
+  @keyframes gira{to{transform:rotate(360deg)}}
+  .oculto{display:none !important}
+
+  /* ── PAPEL ────────────────────────────────────────────────────────────── */
+  @media print{
+    @page{margin:14mm}
+    body{background:#fff;color:#000;padding:0}
+    .no-print{display:none !important}
+    .doc{max-width:none;margin:0;border:none;border-radius:0;box-shadow:none}
+    .cuerpo{padding:0}
+    .barra{display:none}
+    .emp-ini{background:#fff;color:#000;border:2px solid #000}
+    .total{background:#fff;border:2px solid #000;border-radius:0;padding:14px 16px}
+    .badge{border-color:#000 !important;background:#fff !important;color:#000 !important}
+    .respuesta{border-color:#000;background:#fff}
+    .it,.it-enc,.items{border-color:#999}
+    .texto,.it-c,.sello .fec,.pie-doc,.dato .v,.total .t-k{color:#000}
+    .rotulo,.sello .rot,.dato .k,.it-enc span{color:#444}
+    .bolt a.b1,.bolt .b2{color:#666}
+    a{text-decoration:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- Cargando -->
+<div class="estado-pag" id="vCargando">
+  <div class="spin"></div>
+  <p>Abriendo el presupuesto…</p>
+</div>
+
+<!-- No existe / token roto -->
+<div class="estado-pag oculto" id="vError">
+  <div class="em">📄</div>
+  <h2 id="errTitulo">Este presupuesto no existe o fue dado de baja</h2>
+  <p id="errTexto">Si te lo pasaron por WhatsApp, pedile a quien te lo envió que te mande el link de nuevo.</p>
+</div>
+
+<!-- El documento -->
+<div class="doc oculto" id="vDoc">
+  <div class="barra"></div>
+  <div class="cuerpo">
+
+    <div class="enc">
+      <div class="emp">
+        <img class="emp-logo oculto" id="empLogo" alt="">
+        <div class="emp-ini" id="empIni">·</div>
+        <div style="min-width:0">
+          <div class="emp-nom" id="empNom">—</div>
+          <div class="emp-sub" id="empSub"></div>
+        </div>
+      </div>
+      <div class="sello">
+        <div class="rot">Presupuesto</div>
+        <div class="num" id="pNum">—</div>
+        <div class="fec" id="pFecha"></div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="datos" id="datos">
+      <div class="dato oculto" id="dCliente"><div class="k">Para</div><div class="v" id="vCliente"></div></div>
+      <div class="dato oculto" id="dValidez"><div class="k">Validez</div><div class="v" id="vValidez"></div></div>
+    </div>
+
+    <div class="bloque">
+      <div class="rotulo">Trabajo a realizar</div>
+      <div class="texto" id="pDesc"></div>
+    </div>
+
+    <div class="bloque oculto" id="bItems">
+      <div class="rotulo">Detalle</div>
+      <div class="items">
+        <div class="it-enc"><span>Concepto</span><span>Importe</span></div>
+        <div id="listaItems"></div>
+      </div>
+    </div>
+
+    <div class="total">
+      <div class="t-k">Total</div>
+      <div class="t-v" id="pTotal">—</div>
+    </div>
+
+    <div class="bloque oculto" id="bNotas">
+      <div class="rotulo">Notas</div>
+      <div class="texto" id="pNotas"></div>
+    </div>
+
+    <!-- Estado ya resuelto (aceptado / rechazado / borrador) -->
+    <div id="bEstado"></div>
+
+    <!-- Botones de respuesta -->
+    <div class="acciones no-print oculto" id="bAcciones">
+      <div class="fila" id="filaBotones">
+        <button class="btn btn-si" id="btnSi" type="button">Aceptar presupuesto</button>
+        <button class="btn btn-no" id="btnNo" type="button">No, gracias</button>
+      </div>
+      <div class="confirmar oculto" id="cajaConfirmar">
+        <p>¿Confirmás que no vas a tomar este presupuesto? Se le avisa al profesional y no se puede deshacer.</p>
+        <div class="fila">
+          <button class="btn btn-no" id="btnNoSi" type="button">Sí, rechazarlo</button>
+          <button class="btn btn-no" id="btnVolver" type="button">Volver</button>
+        </div>
+      </div>
+      <div class="aviso" id="avisoAcc"></div>
+    </div>
+
+    <!-- Respuesta enviada -->
+    <div class="respuesta oculto no-print" id="bRespuesta">
+      <div class="em" id="rEmoji">✅</div>
+      <h3 id="rTitulo"></h3>
+      <p id="rTexto"></p>
+      <a class="btn btn-wa oculto" id="rWa" target="_blank" rel="noopener noreferrer">Escribirle por WhatsApp</a>
+    </div>
+
+    <div class="pie-doc oculto" id="pieDoc"></div>
+
+    <div class="acciones no-print">
+      <div class="fila">
+        <button class="btn btn-gris" id="btnImprimir" type="button">Descargar / Imprimir</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Marca BOLT — SÓLO plan free. Se imprime también (en gris, sin fondo): es
+     lo que paga el plan gratis. En Pro este bloque nunca se muestra. -->
+<div class="bolt oculto" id="pieBolt">
+  <a class="b1" href="https://bolt.com.ar" target="_blank" rel="noopener noreferrer">Presupuesto hecho con <b>BOLT</b></a>
+  <a class="b2" href="https://bolt.com.ar/prestadores/" target="_blank" rel="noopener noreferrer">¿Sos profesional? Hacé los tuyos gratis</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  'use strict';
+
+  var SUPABASE_URL = 'https://lyeqnvldemcltlbujlnc.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_4e50WLUuWTJ0u2DN6HPUNw_FeIdsV-0';
+
+  // Sin persistSession ni detectSessionInUrl: acá no hay login ni tiene que
+  // haberlo. El cliente entra con el token y nada más.
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+  });
+
+  var $ = function(id){ return document.getElementById(id); };
+  function esc(s){ var d = document.createElement('div'); d.textContent = (s == null ? '' : String(s)); return d.innerHTML; }
+  function ver(el, si){ if (el) el.classList.toggle('oculto', !si); }
+
+  // ── Plata en argentino: $180.000 ───────────────────────────────────────
+  function plata(n){
+    var x = Number(n);
+    if (!isFinite(x)) x = 0;
+    return '$' + x.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+  function cantidad(n){
+    var x = Number(n);
+    if (!isFinite(x)) x = 1;
+    return x.toLocaleString('es-AR', { maximumFractionDigits: 3 });
+  }
+  function fecha(iso){
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  // ── Color de acento ────────────────────────────────────────────────────
+  // Sólo en Pro. Si el hex no es válido, se queda el amarillo de BOLT.
+  function normHex(c){
+    if (typeof c !== 'string') return null;
+    var h = c.trim();
+    if (/^[0-9a-fA-F]{6}$/.test(h) || /^[0-9a-fA-F]{3}$/.test(h)) h = '#' + h;
+    if (/^#[0-9a-fA-F]{3}$/.test(h)) h = '#' + h[1] + h[1] + h[2] + h[2] + h[3] + h[3];
+    return /^#[0-9a-fA-F]{6}$/.test(h) ? h.toLowerCase() : null;
+  }
+  function rgbDe(hex){
+    return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+  }
+  // El acento puede ser amarillo (necesita texto negro) o azul marino (blanco).
+  // Se decide por luminancia y no a ojo, porque el color lo elige el profesional.
+  function textoSobre(hex){
+    var c = rgbDe(hex);
+    var L = (0.299*c[0] + 0.587*c[1] + 0.114*c[2]) / 255;
+    return L > 0.62 ? '#0A0A0A' : '#FFFFFF';
+  }
+  function aplicarAcento(hex){
+    var h = normHex(hex);
+    if (!h) return;
+    var c = rgbDe(h);
+    var r = document.documentElement.style;
+    r.setProperty('--acento', h);
+    r.setProperty('--acento-tx', textoSobre(h));
+    r.setProperty('--acento-suave', 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',.12)');
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', '#ffffff');
+  }
+
+  // ── WhatsApp ───────────────────────────────────────────────────────────
+  // Misma convención que el panel (admin.html): si ya trae 54 se respeta,
+  // si no se arma 549 + los últimos 10 dígitos.
+  function waNumero(tel){
+    var n = String(tel || '').replace(/\D/g, '');
+    if (n.length < 8) return null;
+    return n.indexOf('54') === 0 ? n : ('549' + n.slice(-10));
+  }
+  function waLink(tel, texto){
+    var n = waNumero(tel);
+    if (!n) return null;
+    return 'https://wa.me/' + n + '?text=' + encodeURIComponent(texto);
+  }
+
+  // ── El token ───────────────────────────────────────────────────────────
+  var QS = new URLSearchParams(location.search);
+  var TOKEN = (QS.get('t') || QS.get('token') || '').trim();
+
+  var P = null;   // el presupuesto que devolvió la RPC
+
+  // ── Vista previa (?demo=1 · ?demo=pro) ─────────────────────────────────
+  // Sólo para mirar el diseño mientras se trabaja: NO toca la base, no lee ni
+  // escribe nada, y los botones de respuesta quedan apagados. Existe porque
+  // para ver esta página hace falta un presupuesto real, y no siempre hay uno.
+  // Si molesta, se borra este bloque y las 3 líneas de DEMO más abajo.
+  var DEMO = QS.get('demo');
+  function presupuestoDemo(pro){
+    return {
+      numero: 12,
+      descripcion: 'Instalación de aire acondicionado split 3000 frigorías en dormitorio.\nIncluye soportes, caño y puesta en marcha.',
+      total: 180000,
+      notas: 'El equipo no está incluido. Se coordina fecha con 48 hs de anticipación.',
+      estado: 'enviado',
+      validez_dias: 15,
+      creado: new Date().toISOString(),
+      cliente: 'María González',
+      items: [
+        { descripcion: 'Mano de obra e instalación', cantidad: 1, precio: 120000 },
+        { descripcion: 'Caño y aislación (metro)',    cantidad: 4, precio: 12000  },
+        { descripcion: 'Soportes de pared',           cantidad: 1, precio: 12000  }
+      ],
+      empresa: pro
+        ? { nombre: 'Refrigeración Sur', telefono: '2914123456', logo: null, color: '#1E4E8C',
+            instagram: 'refrisur', web: 'refrisur.com.ar', fiscales: 'Juan Pérez · CUIT 20-12345678-9 · Monotributo', pro: true }
+        : { nombre: 'Juan Pérez', telefono: '2914123456', logo: null, color: null,
+            instagram: null, web: null, fiscales: null, pro: false }
+    };
+  }
+
+  function mostrarError(titulo, texto){
+    ver($('vCargando'), false);
+    ver($('vDoc'), false);
+    ver($('pieBolt'), false);
+    if (titulo) $('errTitulo').textContent = titulo;
+    if (texto)  $('errTexto').textContent  = texto;
+    ver($('vError'), true);
+  }
+
+  // ── Cargar ─────────────────────────────────────────────────────────────
+  (async function(){
+    if (DEMO){                                          // DEMO
+      P = presupuestoDemo(DEMO === 'pro'); pintar(P); return;   // DEMO
+    }                                                   // DEMO
+    if (!TOKEN){
+      mostrarError(
+        'Este presupuesto no existe o fue dado de baja',
+        'El link parece incompleto. Pedile a quien te lo envió que te lo mande de nuevo.'
+      );
+      return;
+    }
+    var data = null, error = null;
+    try {
+      var r = await sb.rpc('presupuesto_publico', { p_token: TOKEN });
+      data = r.data; error = r.error;
+    } catch (e) { error = e; }
+
+    if (error){
+      // Un problema de red no es lo mismo que un presupuesto que no existe:
+      // no le digamos que se dio de baja algo que capaz está perfecto.
+      console.warn(error);
+      mostrarError(
+        'No pudimos abrir el presupuesto',
+        'Puede ser la conexión. Probá de nuevo en un momento o volvé a tocar el link.'
+      );
+      return;
+    }
+    if (!data){
+      mostrarError();
+      return;
+    }
+    P = data;
+    pintar(P);
+  })();
+
+  // ── Pintar el documento ────────────────────────────────────────────────
+  function pintar(p){
+    var emp = p.empresa || {};
+    var pro = emp.pro === true;
+
+    if (pro) aplicarAcento(emp.color);
+
+    // Empresa
+    var nombre = (emp.nombre || '').trim() || 'Presupuesto';
+    $('empNom').textContent = nombre;
+    if (emp.logo){
+      var img = $('empLogo');
+      img.onload  = function(){ ver(img, true); ver($('empIni'), false); };
+      img.onerror = function(){ ver(img, false); ver($('empIni'), true); };
+      img.src = emp.logo;
+      img.alt = nombre;
+    }
+    $('empIni').textContent = (nombre[0] || '·').toUpperCase();
+
+    // Contacto debajo del nombre (teléfono / instagram / web)
+    var sub = [];
+    if (emp.telefono)  sub.push(esc(emp.telefono));
+    if (emp.instagram) sub.push(esc(String(emp.instagram).replace(/^@?/, '@')));
+    if (emp.web)       sub.push(esc(String(emp.web).replace(/^https?:\/\//, '')));
+    $('empSub').innerHTML = sub.join(' · ');
+
+    // Número y fecha
+    $('pNum').textContent = p.numero != null ? ('N° ' + p.numero) : '';
+    $('pFecha').textContent = fecha(p.creado);
+
+    // Para / Validez
+    if (p.cliente){
+      $('vCliente').textContent = p.cliente;
+      ver($('dCliente'), true);
+    }
+    if (p.validez_dias){
+      var txt = p.validez_dias + (p.validez_dias === 1 ? ' día' : ' días');
+      var base = new Date(p.creado);
+      if (!isNaN(base.getTime())){
+        var vence = new Date(base.getTime() + p.validez_dias * 86400000);
+        txt += ' · hasta el ' + fecha(vence.toISOString());
+        if (vence < new Date()) txt += ' (vencido)';
+      }
+      $('vValidez').textContent = txt;
+      ver($('dValidez'), true);
+    }
+
+    // Descripción
+    $('pDesc').textContent = p.descripcion || '';
+
+    // Ítems — sólo si hay
+    var items = Array.isArray(p.items) ? p.items : [];
+    if (items.length){
+      var cont = $('listaItems');
+      cont.innerHTML = '';
+      items.forEach(function(it){
+        var cant = Number(it.cantidad); if (!isFinite(cant)) cant = 1;
+        var pre  = Number(it.precio);   if (!isFinite(pre))  pre = 0;
+
+        var fila = document.createElement('div'); fila.className = 'it';
+        var izq  = document.createElement('div'); izq.style.minWidth = '0';
+        var d    = document.createElement('div'); d.className = 'it-d';
+        d.textContent = it.descripcion || '';
+        izq.appendChild(d);
+
+        // "2 × $15.000" sólo aporta cuando hay más de una unidad o hay precio.
+        if (cant !== 1 || pre > 0){
+          var c = document.createElement('div'); c.className = 'it-c';
+          c.textContent = cantidad(cant) + ' × ' + plata(pre);
+          izq.appendChild(c);
+        }
+        var s = document.createElement('div'); s.className = 'it-s';
+        s.textContent = plata(cant * pre);
+
+        fila.appendChild(izq); fila.appendChild(s);
+        cont.appendChild(fila);
+      });
+      ver($('bItems'), true);
+    }
+
+    // Total
+    $('pTotal').textContent = plata(p.total);
+
+    // Notas
+    if (p.notas && String(p.notas).trim()){
+      $('pNotas').textContent = p.notas;
+      ver($('bNotas'), true);
+    }
+
+    // Datos fiscales al pie del documento
+    if (emp.fiscales && String(emp.fiscales).trim()){
+      $('pieDoc').textContent = emp.fiscales;
+      ver($('pieDoc'), true);
+    }
+
+    // Marca BOLT: sólo en el plan gratis. En Pro no aparece en ningún lado.
+    ver($('pieBolt'), !pro);
+
+    // Estado / botones
+    pintarEstado(p.estado);
+
+    ver($('vCargando'), false);
+    ver($('vDoc'), true);
+    document.title = 'Presupuesto' + (p.numero != null ? ' N° ' + p.numero : '');  // nunca el token
+  }
+
+  // ── Estado ─────────────────────────────────────────────────────────────
+  function pintarEstado(estado){
+    var puedeResponder = (estado === 'enviado' || estado === 'visto');
+    ver($('bAcciones'), puedeResponder);
+
+    if (estado === 'aceptado'){
+      badge('ok', '✓ Presupuesto aceptado');
+    } else if (estado === 'rechazado'){
+      badge('no', 'Presupuesto rechazado');
+    } else if (!puedeResponder){
+      // 'borrador' u otro: se muestra el documento, sin botones y sin cartel.
+      $('bEstado').innerHTML = '';
+    } else {
+      $('bEstado').innerHTML = '';
+    }
+  }
+  function badge(clase, texto){
+    var d = document.createElement('div');
+    d.className = 'badge ' + clase;
+    d.textContent = texto;
+    $('bEstado').innerHTML = '';
+    $('bEstado').appendChild(d);
+  }
+
+  // ── Responder ──────────────────────────────────────────────────────────
+  var enviando = false;
+
+  async function responder(acepta){
+    if (enviando) return;
+    if (DEMO){ exito(acepta); return; }                 // DEMO: no toca la base
+    enviando = true;
+    var aviso = $('avisoAcc');
+    aviso.className = 'aviso';
+    aviso.textContent = 'Enviando tu respuesta…';
+    $('btnSi').disabled = true; $('btnNo').disabled = true;
+    $('btnNoSi').disabled = true; $('btnVolver').disabled = true;
+
+    var ok = null, error = null;
+    try {
+      var r = await sb.rpc('responder_presupuesto', { p_token: TOKEN, p_acepta: acepta });
+      ok = r.data; error = r.error;
+    } catch (e) { error = e; }
+
+    enviando = false;
+
+    if (error){
+      console.warn(error);
+      $('btnSi').disabled = false; $('btnNo').disabled = false;
+      $('btnNoSi').disabled = false; $('btnVolver').disabled = false;
+      aviso.className = 'aviso err';
+      aviso.textContent = 'No pudimos enviar tu respuesta. Probá de nuevo en un momento.';
+      return;
+    }
+
+    if (ok === false){
+      // Ya lo habían respondido desde otro lado (o el profesional lo volvió a
+      // borrador). No es un error del cliente: se le muestra tal cual está.
+      ver($('bAcciones'), false);
+      badge('no', 'Este presupuesto ya fue respondido');
+      return;
+    }
+
+    exito(acepta);
+  }
+
+  function exito(acepto){
+    var emp = (P && P.empresa) || {};
+    var nombre = (emp.nombre || '').trim() || 'el profesional';
+    var numero = (P && P.numero != null) ? P.numero : null;
+
+    ver($('bAcciones'), false);
+    badge(acepto ? 'ok' : 'no', acepto ? '✓ Presupuesto aceptado' : 'Presupuesto rechazado');
+
+    $('rEmoji').textContent = acepto ? '🎉' : '👍';
+    $('rTitulo').textContent = acepto ? '¡Listo! ' + nombre + ' ya fue avisado' : 'Respuesta enviada';
+    $('rTexto').textContent = acepto
+      ? 'Aceptaste el presupuesto. Si querés coordinar el día y la hora, escribile ahora.'
+      : 'Le avisamos a ' + nombre + ' que no vas a tomar este presupuesto. Gracias por responder.';
+    $('bRespuesta').classList.toggle('neutro', !acepto);
+
+    var msj = acepto
+      ? ('Hola! Acepté el presupuesto' + (numero != null ? ' N° ' + numero : '') + '. ¿Cuándo lo podemos coordinar?')
+      : ('Hola! Vi el presupuesto' + (numero != null ? ' N° ' + numero : '') + '. Por ahora no lo voy a tomar, gracias.');
+    var link = waLink(emp.telefono, msj);
+    if (link){
+      $('rWa').href = link;
+      $('rWa').textContent = acepto ? 'Coordinar por WhatsApp' : 'Escribirle por WhatsApp';
+      ver($('rWa'), true);
+    }
+
+    ver($('bRespuesta'), true);
+    $('bRespuesta').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // ── Eventos ────────────────────────────────────────────────────────────
+  $('btnSi').addEventListener('click', function(){ responder(true); });
+  $('btnNo').addEventListener('click', function(){
+    ver($('filaBotones'), false);
+    ver($('cajaConfirmar'), true);
+  });
+  $('btnVolver').addEventListener('click', function(){
+    ver($('cajaConfirmar'), false);
+    ver($('filaBotones'), true);
+    $('avisoAcc').textContent = '';
+  });
+  $('btnNoSi').addEventListener('click', function(){ responder(false); });
+  $('btnImprimir').addEventListener('click', function(){ window.print(); });
+
+})();
+</script>
+</body>
+</html>
