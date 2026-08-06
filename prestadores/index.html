@@ -150,6 +150,15 @@
   .matri-box.checked{background:rgba(255,214,0,.08);border-color:rgba(255,214,0,.4)}
   .matri-check{display:flex;align-items:flex-start;gap:11px;cursor:pointer;font-size:.9rem;font-weight:700;margin:0}
   .matri-check input{width:20px;height:20px;accent-color:var(--yellow);margin-top:1px;flex-shrink:0;cursor:pointer}
+
+  /* Aceptación de términos — discreta a propósito: una línea chica en gris.
+     Lo que vale es que sea un acto explícito (hay que tildarla) y que quede
+     guardada con fecha, no el tamaño de la letra. Hasta que se tilda, el botón
+     de crear la cuenta se ve apagado (.off) y explica por qué al tocarlo. */
+  .tyc{display:flex;align-items:flex-start;gap:8px;margin-top:18px;margin-bottom:0;font-size:12px;line-height:1.5;font-weight:400;color:#8E8E96;cursor:pointer}
+  .tyc input{width:16px;height:16px;accent-color:var(--yellow);margin-top:1px;flex-shrink:0;cursor:pointer}
+  .tyc a{color:var(--text);text-decoration:underline}
+  .btn-submit.off,.btn-submit.off:hover{opacity:.45;box-shadow:none}
 </style>
 </head>
 <body>
@@ -280,7 +289,11 @@
         </div>
 
         <div class="g-nota" id="gNota">Ahora esto es todo. Después te pedimos tu WhatsApp, tu oficio y la documentación por tu link personal — lo hacés desde el celular sacando las fotos en el momento.</div>
-        <button class="btn-submit" id="btnRegistrar" onclick="registrarConGoogle()">Registrarme como profesional ⚡</button>
+        <label class="tyc" id="tycGoogleBox">
+          <input type="checkbox" id="tycGoogle" onchange="pintarTyc()">
+          <span>Acepto los <a href="../terms.html" target="_blank" rel="noopener" onclick="event.stopPropagation()">Términos</a> y la <a href="../privacy.html" target="_blank" rel="noopener" onclick="event.stopPropagation()">Política de Privacidad</a>. Trabajo de forma independiente; BOLT no es mi empleador.</span>
+        </label>
+        <button class="btn-submit off" id="btnRegistrar" onclick="registrarConGoogle()">Registrarme como profesional ⚡</button>
         <div class="msg" id="gcMsg"></div>
         <div class="g-alt"><a onclick="salirGoogle()">No soy yo · entrar con otra cuenta</a></div>
       </div>
@@ -304,7 +317,11 @@
              estuvo tres días aprobada sin poder recibir un solo trabajo. -->
         <label style="margin-top:14px">¿Qué hacés? *</label>
         <div id="m_chipsOficio" class="chips"></div>
-        <button class="btn-submit" id="btnManual" onclick="registrarManual()">Registrarme ⚡</button>
+        <label class="tyc" id="tycManualBox">
+          <input type="checkbox" id="tycManual" onchange="pintarTyc()">
+          <span>Acepto los <a href="../terms.html" target="_blank" rel="noopener" onclick="event.stopPropagation()">Términos</a> y la <a href="../privacy.html" target="_blank" rel="noopener" onclick="event.stopPropagation()">Política de Privacidad</a>. Trabajo de forma independiente; BOLT no es mi empleador.</span>
+        </label>
+        <button class="btn-submit off" id="btnManual" onclick="registrarManual()">Registrarme ⚡</button>
         <div class="msg" id="mMsg"></div>
         <div class="g-alt"><a onclick="verGoogle()">← Mejor entro con Google</a></div>
       </div>
@@ -398,6 +415,48 @@
   }
   function verManual(){ vista('manualForm'); }
   function verGoogle(){ vista('gStart'); }
+
+  // ── Aceptación de términos ────────────────────────────────────────────────
+  // Es un acto explícito: hay que tildar la casilla. Mientras no esté tildada el
+  // botón se ve apagado, pero NO usamos el atributo disabled a propósito: un
+  // botón muerto no puede explicar por qué no anda. Se deja clickeable y el
+  // handler contesta con el motivo.
+  const TYC = [['tycGoogle','tycGoogleBox','btnRegistrar'], ['tycManual','tycManualBox','btnManual']];
+  function tycPedido(boxId){
+    const box = $(boxId);
+    return !!box && box.style.display !== 'none';
+  }
+  function pintarTyc(){
+    TYC.forEach(([chkId, boxId, btnId]) => {
+      const chk = $(chkId), btn = $(btnId);
+      if (!chk || !btn) return;
+      btn.classList.toggle('off', tycPedido(boxId) && !chk.checked);
+    });
+  }
+  // true = falta aceptar (y ya se lo dijimos en pantalla)
+  function faltaAceptar(chkId, boxId, msgId){
+    if (!tycPedido(boxId)) return false;          // no se está creando una cuenta
+    const chk = $(chkId);
+    if (chk && chk.checked) return false;
+    const msg = $(msgId);
+    if (msg){
+      msg.style.color = 'var(--red)';
+      msg.textContent = 'Falta tildar la casilla de los Términos y la Política de Privacidad.';
+    }
+    $(boxId).scrollIntoView({ behavior:'smooth', block:'center' });
+    return true;
+  }
+  // La aceptación se guarda junto con el alta. ⚠️ Las columnas terminos_aceptados
+  // (boolean) y terminos_at (timestamptz) TODAVÍA NO EXISTEN en 'professionals'
+  // ni en 'prestador_leads': hasta que se creen, PostgREST rechaza el insert con
+  // PGRST204 y reintentamos sin esos campos, para que el alta no se caiga por
+  // esto. Cuando las columnas existan, entra al primer intento y no hay reintento.
+  const camposTyc = () => ({ terminos_aceptados: true, terminos_at: new Date().toISOString() });
+  function sinTyc(fila){ const f = { ...fila }; delete f.terminos_aceptados; delete f.terminos_at; return f; }
+  function faltanColumnasTyc(error){
+    if (!error) return false;
+    return error.code === 'PGRST204' || /terminos_(aceptados|at)/i.test(error.message || '');
+  }
 
   // Vuelve al principio para cargar a la próxima persona, sin arrastrar la
   // cuenta de Google de la anterior. Recarga entera: es la forma más segura de
@@ -551,6 +610,10 @@
     $('gNota').textContent = 'Es lo único que falta. Sin oficio no aparecés en las búsquedas de los clientes.';
     $('btnRegistrar').textContent = 'Guardar mi oficio ⚡';
     $('btnRegistrar').onclick = guardarSoloOficio;
+    // Acá no se crea ninguna cuenta: ya está registrada y ya aceptó al darse de
+    // alta. Pedirle otra vez los términos sólo trabaría la reparación del oficio.
+    $('tycGoogleBox').style.display = 'none';
+    pintarTyc();
     vista('gConfirm');
   }
 
@@ -589,7 +652,7 @@
   // Si esto falla no se corta el alta — el lead y el mail ya son útiles.
   async function crearProfesional(user, d){
     try {
-      const { data: prof, error } = await sb.from('professionals').upsert({
+      const fila = {
         user_id: user.id,
         first_name: d.nombre,
         last_name: d.apellido || '',
@@ -597,7 +660,14 @@
         // En la calle hay alguien de BOLT delante: queda listo para trabajar.
         // Por la web queda pendiente de revisión, como hasta ahora.
         verification_status: MODO_CALLE ? 'approved' : 'pending',
-      }, { onConflict: 'user_id' }).select().single();
+        ...camposTyc(),
+      };
+      let { data: prof, error } = await sb.from('professionals')
+        .upsert(fila, { onConflict: 'user_id' }).select().single();
+      if (faltanColumnasTyc(error)) {
+        ({ data: prof, error } = await sb.from('professionals')
+          .upsert(sinTyc(fila), { onConflict: 'user_id' }).select().single());
+      }
       if (error) throw error;
 
       const filas = elegidos.filter(o => o.id)
@@ -641,6 +711,8 @@
       return;
     }
 
+    if (faltaAceptar('tycGoogle','tycGoogleBox','gcMsg')) return;
+
     btn.disabled = true; btn.textContent = 'Registrando…';
     msg.style.color = 'var(--muted)'; msg.textContent = 'Un momento…';
 
@@ -656,7 +728,7 @@
 
     const token = genToken();
     try {
-      const { error } = await sb.from('prestador_leads').insert({
+      const lead = {
         nombre: d.nombre,
         apellido: d.apellido,
         email: d.email,
@@ -664,7 +736,10 @@
         profesion: elegidos.length ? elegidos.map(o => o.name).join(', ') : 'A completar',
         fuente: MODO_CALLE ? 'calle' : (FUENTE === 'landing' ? 'web-google' : FUENTE),
         completar_token: token,
-      });
+        ...camposTyc(),
+      };
+      let { error } = await sb.from('prestador_leads').insert(lead);
+      if (faltanColumnasTyc(error)) ({ error } = await sb.from('prestador_leads').insert(sinTyc(lead)));
       if (error) throw error;
 
       // La fila de 'professionals' — sin esto la app lo trata como usuario común.
@@ -698,6 +773,7 @@
     if (tel.length < 8){ msg.textContent = 'Falta tu WhatsApp (con característica, sin el 0 ni el 15).'; return; }
     const email = v('m_email');
     if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.textContent = 'Ese email no parece válido. Corregilo o dejalo vacío.'; return; }
+    if (faltaAceptar('tycManual','tycManualBox','mMsg')) return;
 
     btn.disabled = true; btn.textContent = 'Registrando…';
     msg.style.color = 'var(--muted)'; msg.textContent = 'Un momento…';
@@ -714,7 +790,7 @@
 
     const token = genToken();
     try {
-      const { error } = await sb.from('prestador_leads').insert({
+      const lead = {
         nombre: v('m_nombre'),
         apellido: v('m_apellido'),
         telefono: tel,
@@ -722,7 +798,10 @@
         profesion: elegidosManual.map(o => o.name).join(', '),
         fuente: 'web-whatsapp',
         completar_token: token,
-      });
+        ...camposTyc(),
+      };
+      let { error } = await sb.from('prestador_leads').insert(lead);
+      if (faltanColumnasTyc(error)) ({ error } = await sb.from('prestador_leads').insert(sinTyc(lead)));
       if (error) throw error;
       let mailOk = false;
       if (email){
@@ -800,6 +879,11 @@
   //    El intercambio del ?code= por la sesión es asincrónico. Si preguntáramos
   //    una sola vez podríamos llegar antes de que termine y mostrarle otra vez
   //    el botón de registrarse a alguien que YA se logueó.
+  // El navegador puede recordar la casilla tildada al recargar o al volver
+  // atrás: si no repintamos, el botón se quedaría apagado con el tilde puesto.
+  pintarTyc();
+  window.addEventListener('pageshow', pintarTyc);
+
   (async () => {
     const url = new URL(location.href);
     const volvimosDeGoogle = url.searchParams.has('code') || url.searchParams.has('error') || /access_token=/.test(location.hash);
