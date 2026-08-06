@@ -608,11 +608,25 @@
     $('btnSi').disabled = true; $('btnNo').disabled = true;
     $('btnNoSi').disabled = true; $('btnVolver').disabled = true;
 
+    // Se responde por la Edge Function y no por la RPC directa, porque ademas de
+    // cambiar el estado le manda el aviso al profesional. Antes el cliente
+    // aceptaba y del otro lado no se enteraba nadie.
+    // Si la funcion no responde (desplegada a medias, sin internet en el medio),
+    // se cae a la RPC de siempre: perder el aviso es molesto, perder el "acepto"
+    // del cliente es perder el trabajo.
     var ok = null, error = null;
     try {
-      var r = await sb.rpc('responder_presupuesto', { p_token: TOKEN, p_acepta: acepta });
-      ok = r.data; error = r.error;
-    } catch (e) { error = e; }
+      var r = await sb.functions.invoke('presupuesto-respondido', {
+        body: { token: TOKEN, acepta: acepta },
+      });
+      if (r.error) throw r.error;
+      ok = true;
+    } catch (e) {
+      try {
+        var r2 = await sb.rpc('responder_presupuesto', { p_token: TOKEN, p_acepta: acepta });
+        ok = r2.data; error = r2.error;
+      } catch (e2) { error = e2; }
+    }
 
     enviando = false;
 
