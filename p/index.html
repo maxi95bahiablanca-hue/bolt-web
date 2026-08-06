@@ -654,9 +654,17 @@
   // ── Pintar el documento ────────────────────────────────────────────────
   function pintar(p){
     var emp = p.empresa || {};
-    var pro = emp.pro === true;
 
-    if (pro) aplicarAcento(emp.color);
+    // 🔴 YA NO HAY PLANES. Maxi (6-ago-2026): "no hagas plan pro, que sea TODO
+    // GRATIS... mientras tanto que disfruten del potencial de la app gratis".
+    // El color de la empresa pinta para todos, sin condición.
+    //
+    // Lo que SÍ queda para todos es la línea de BOLT al pie: no es un castigo
+    // del plan gratis —no hay plan gratis, hay una sola cosa y es gratis—, es
+    // lo único que BOLT recibe a cambio. Cada presupuesto que sale es un aviso
+    // que ve un cliente real, justo cuando está por gastar plata en un oficio.
+    // `emp.pro` sigue llegando de la base; acá ya no lo mira nadie.
+    aplicarAcento(emp.color);
 
     // Empresa
     var nombre = (emp.nombre || '').trim() || 'Presupuesto';
@@ -723,8 +731,10 @@
       ver($('pieDoc'), true);
     }
 
-    // Marca BOLT: sólo en el plan gratis. En Pro no aparece en ningún lado.
-    ver($('pieBolt'), !pro);
+    // La marca de BOLT va siempre (ver el comentario de arriba): con todo
+    // gratis, es lo único que vuelve. Es discreta y va al pie, debajo del
+    // documento — nunca compitiendo con la identidad del profesional.
+    ver($('pieBolt'), true);
 
     // Estado: el bloque de arriba y el cartel del documento
     pintarPanel(p, false);
