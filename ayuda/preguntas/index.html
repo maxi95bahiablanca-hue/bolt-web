@@ -28,6 +28,18 @@
     <span class="minutos">Buscá la tuya · 1 minuto</span>
   </div>
 
+
+  <!-- ── Buscador ──────────────────────────────────────────────
+       Arranca oculto y lo muestra el script del final: si alguien
+       entra sin JavaScript, no se le dibuja un campo que no filtra
+       nada. Las preguntas quedan todas a la vista, como siempre. -->
+  <div class="buscador" id="buscador" hidden>
+    <label class="visualmente-oculto" for="buscar">Buscar en las preguntas</label>
+    <input class="buscador-campo" id="buscar" type="search" autocomplete="off"
+           placeholder="Buscá tu duda: radar, cobro, código…">
+    <p class="buscador-cuenta" id="cuenta" hidden></p>
+  </div>
+
   <!-- ══ No me llega trabajo ══════════════════════════════ -->
   <section class="grupo-preguntas">
     <h2>No me llega trabajo</h2>
@@ -218,6 +230,18 @@
     </details>
   </section>
 
+
+  <!-- Lo único que queda en pantalla cuando el filtro no encontró nada.
+       Que la salida sea el WhatsApp y no un callejón: el que buscó y no
+       encontró es justamente el que hay que atender. -->
+  <div class="sin-resultados" id="sin-resultados" hidden>
+    <h2>No encontramos esa pregunta</h2>
+    <p class="apoyo">Probá con una palabra sola —«radar», «cobro», «código», «presupuesto»— o preguntanos directamente y te contestamos.</p>
+    <a class="btn-wa" href="https://wa.me/5492914199938?text=Hola%2C%20tengo%20una%20pregunta%20sobre%20BOLT%3A">
+      💬 Escribir al soporte
+    </a>
+  </div>
+
   <!-- ── PDF ──────────────────────────────────────────────── -->
   <div class="pdf-zona">
     <button class="btn-pdf" type="button" onclick="window.print()">📄 Guardar como PDF</button>
@@ -256,8 +280,72 @@
 
 </main>
 
-<!-- Lo único de JavaScript de la página: que las preguntas salgan abiertas
-     en el PDF. En pantalla no cambia nada. -->
+<!-- Buscador de las preguntas. Filtra mientras se escribe, comparando contra
+     la pregunta Y la respuesta, sin acentos y sin distinguir mayúsculas:
+     "codigo" encuentra "código". En papel no interviene: se imprimen todas. -->
+<script>
+(function () {
+  var campo = document.getElementById('buscar');
+  if (!campo) { return; }
+
+  var caja      = document.getElementById('buscador');
+  var cuenta    = document.getElementById('cuenta');
+  var sin       = document.getElementById('sin-resultados');
+  var grupos    = [].slice.call(document.querySelectorAll('.grupo-preguntas'));
+  var preguntas = [].slice.call(document.querySelectorAll('details.pregunta'));
+
+  function limpiar(t) {
+    t = (t || '').toLowerCase();
+    if (t.normalize) { t = t.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+    return t.replace(/\s+/g, ' ').trim();
+  }
+
+  // El texto de cada pregunta se calcula una sola vez, al arrancar.
+  var textos = preguntas.map(function (d) { return limpiar(d.textContent); });
+
+  function filtrar() {
+    var palabras = limpiar(campo.value).split(' ').filter(function (p) { return p; });
+    var hallados = 0;
+
+    preguntas.forEach(function (d, i) {
+      var entra = true;
+      for (var p = 0; p < palabras.length; p++) {
+        if (textos[i].indexOf(palabras[p]) === -1) { entra = false; break; }
+      }
+      d.hidden = !entra;
+      // Buscando, la respuesta se abre sola: muchas veces la palabra está
+      // adentro de la respuesta y con el título nada más no se entiende por
+      // qué quedó ésa. Con el campo vacío, todo vuelve a estar cerrado.
+      d.open = entra && palabras.length > 0;
+      if (entra) { hallados++; }
+    });
+
+    // Un título de grupo sin ninguna pregunta abajo es ruido.
+    grupos.forEach(function (g) {
+      g.hidden = (g.querySelectorAll('details.pregunta:not([hidden])').length === 0);
+    });
+
+    sin.hidden = (palabras.length === 0 || hallados > 0);
+
+    cuenta.hidden = (palabras.length === 0);
+    cuenta.textContent = palabras.length === 0 ? ''
+      : hallados === 0 ? 'Ninguna coincide'
+      : hallados === 1 ? '1 pregunta' : hallados + ' preguntas';
+  }
+
+  campo.addEventListener('input', filtrar);
+  campo.addEventListener('search', filtrar);   // la crucecita de Chrome
+  campo.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' || e.keyCode === 27) { campo.value = ''; filtrar(); }
+  });
+
+  caja.hidden = false;
+  // Firefox devuelve lo tipeado al recargar: que la lista arranque acorde.
+  filtrar();
+})();
+</script>
+
+<!-- Que las preguntas salgan abiertas en el PDF. En pantalla no cambia nada. -->
 <script>
 (function () {
   var abiertos = [];
@@ -280,6 +368,10 @@
   }
 })();
 </script>
+
+<!-- Cuenta que se abrió esta página, y nada más: ni quién, ni de dónde.
+     Si falla, la página funciona igual. Ver visita.js. -->
+<script src="../visita.js" data-pagina="preguntas"></script>
 
 </body>
 </html>

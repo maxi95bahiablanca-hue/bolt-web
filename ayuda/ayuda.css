@@ -770,3 +770,202 @@ body.indice .cabecera .bajada{ color:#C9C9CF; }
   }
   .soporte{ border-top:1pt solid #000; margin-top:20px; padding-top:12px; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   CARTEL CON EL QR — al pie del índice
+   Para las altas en la calle: se imprime, se pega en el local, o
+   se muestra desde el celular. El código está dibujado en SVG
+   adentro del HTML: no se descarga nada de ningún lado.
+   ══════════════════════════════════════════════════════════════ */
+.cartel{
+  border-top:1px solid var(--borde);
+  margin-top:34px;
+  padding-top:30px;
+  break-inside:avoid;
+}
+.cartel h2{ margin-top:0; }
+.cartel .rotulo{
+  display:block;
+  font-size:.78rem;
+  font-weight:800;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  color:var(--tenue);
+  margin-bottom:12px;
+}
+
+.cartel-hoja{
+  border:2px solid var(--negro);
+  border-radius:18px;
+  background:var(--blanco);
+  padding:28px 24px 24px;
+  margin:0 0 22px;
+  max-width:440px;
+  text-align:center;
+  break-inside:avoid;
+  page-break-inside:avoid;
+}
+
+.cartel-marca{
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+  font-size:1.05rem;
+  font-weight:800;
+  letter-spacing:.02em;
+}
+.cartel-marca em{
+  font-style:normal;
+  width:28px; height:28px;
+  flex:0 0 28px;
+  background:var(--negro);
+  color:var(--amarillo);
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:15px;
+  font-weight:900;
+  /* El cuadro negro es la marca: que se imprima aunque el navegador
+     venga con los fondos apagados para ahorrar tinta. */
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
+}
+
+.cartel-titulo{
+  font-size:1.16rem;
+  font-weight:800;
+  line-height:1.3;
+  letter-spacing:-.01em;
+  margin:16px 0 0;
+}
+
+.cartel-qr{
+  width:190px;
+  margin:18px auto 14px;
+}
+.cartel-qr svg{ display:block; width:100%; height:auto; }
+
+.cartel-url{
+  font-size:1.1rem;
+  font-weight:800;
+  letter-spacing:-.01em;
+  margin:0 0 10px;
+}
+.cartel-pie{
+  font-size:.88rem;
+  line-height:1.5;
+  color:var(--gris);
+  margin:0;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUSCADOR DE LAS PREGUNTAS FRECUENTES
+   ══════════════════════════════════════════════════════════════ */
+.buscador{ margin:26px 0 30px; }
+
+.buscador-campo{
+  width:100%;
+  font-family:inherit;
+  /* 1.02rem ≈ 17px: por debajo de 16px, iOS hace zoom solo al tocar el
+     campo y descoloca toda la página. */
+  font-size:1.02rem;
+  line-height:1.3;
+  color:var(--negro);
+  background:var(--blanco);
+  border:2px solid var(--negro);
+  border-radius:12px;
+  padding:14px 16px;
+  -webkit-appearance:none;
+  appearance:none;
+}
+.buscador-campo::placeholder{ color:var(--tenue); opacity:1; }
+.buscador-campo:focus{
+  outline:3px solid var(--amarillo);
+  outline-offset:1px;
+}
+/* La crucecita que Chrome le pone a los input de tipo search */
+.buscador-campo::-webkit-search-cancel-button{ cursor:pointer; }
+
+.buscador-cuenta{
+  font-size:.88rem;
+  font-weight:600;
+  color:var(--gris);
+  margin:10px 0 0;
+}
+
+.sin-resultados{
+  border:2px solid var(--negro);
+  border-radius:14px;
+  padding:24px 22px;
+  margin:0 0 30px;
+}
+.sin-resultados h2{ margin:0 0 8px; font-size:1.2rem; }
+.sin-resultados p{ margin:0 0 18px; }
+.sin-resultados > :last-child{ margin-bottom:0; }
+
+.visualmente-oculto{
+  position:absolute;
+  width:1px; height:1px;
+  padding:0; margin:-1px;
+  overflow:hidden;
+  clip:rect(0 0 0 0);
+  clip-path:inset(50%);
+  white-space:nowrap;
+  border:0;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PAPEL — el cartel y el buscador
+   ══════════════════════════════════════════════════════════════ */
+@media print{
+
+  /* ── El índice, impreso, es el cartel y nada más ──────────────
+     Es lo único que tiene sentido llevar al papel de esa página:
+     una hoja para pegar en el local. El listado de temas en papel
+     no le sirve a nadie. */
+  body.indice .cabecera,
+  body.indice .clave,
+  body.indice .tarjetas,
+  body.indice > .hoja > h2,
+  body.indice .soporte,
+  body.indice .pie,
+  .cartel > .rotulo,
+  .cartel > h2{
+    display:none !important;
+  }
+
+  .cartel{
+    border:0;
+    margin:0;
+    padding:0;
+    text-align:center;
+  }
+  .cartel-hoja{
+    border:2.5pt solid #000 !important;
+    border-radius:0;
+    max-width:100%;
+    padding:14mm 10mm 12mm;
+    margin:0 auto;
+  }
+  .cartel-marca{ font-size:15pt; }
+  .cartel-marca em{
+    width:30pt; height:30pt; flex:0 0 30pt;
+    font-size:17pt;
+    border-radius:6pt;
+  }
+  .cartel-titulo{ font-size:21pt; line-height:1.25; margin-top:9mm; }
+  .cartel-qr{ width:92mm; margin:9mm auto 7mm; }
+  .cartel-url{ font-size:19pt; margin-bottom:6mm; }
+  .cartel-pie{ font-size:11.5pt; color:#000 !important; }
+
+  /* ── Preguntas frecuentes ─────────────────────────────────────
+     El buscador es de pantalla. En papel salen TODAS las preguntas,
+     aunque el filtro haya dejado tres a la vista: lo que se imprime
+     no depende de lo que alguien haya tipeado hace un rato. */
+  .buscador,
+  .sin-resultados{ display:none !important; }
+
+  details.pregunta[hidden],
+  .grupo-preguntas[hidden]{ display:block !important; }
+}

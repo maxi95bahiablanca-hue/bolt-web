@@ -117,11 +117,45 @@
     </p>
   </section>
 
+
+  <!-- ── Cartel con el QR ─────────────────────────────────────────
+       Para las altas en la calle: se imprime y se pega en el local, o se
+       muestra desde el celular. El QR es un SVG dibujado a mano acá adentro
+       —cero librerías, cero CDN— y apunta a https://bolt.com.ar/ayuda/
+       (QR versión 2, corrección de errores M, 25x25 módulos).
+       Verificado con dos lectores distintos antes de pegarlo.
+       Si algún día cambia la dirección, hay que generar el código de nuevo:
+       editar el <path> a mano no sirve. -->
+  <section class="cartel">
+    <span class="rotulo">Para imprimir o mostrar</span>
+    <h2>El centro de ayuda, en un código</h2>
+    <p class="apoyo no-papel">Imprimilo y pegalo en el local, o mostralo desde el celular cuando des de alta a alguien. Se apunta con la cámara y se abren estas guías.</p>
+
+    <div class="cartel-hoja">
+      <span class="cartel-marca"><em>&#9889;</em>BOLT</span>
+      <p class="cartel-titulo">¿Trabajás en un oficio?<br>Acá está todo explicado</p>
+      <div class="cartel-qr">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33 33" shape-rendering="crispEdges" role="img" aria-label="Código QR que abre bolt.com.ar/ayuda"><rect width="33" height="33" fill="#fff"/><g transform="translate(4 4)"><path d="M0 0h7v1h-7zM8 0h1v1h-1zM11 0h1v1h-1zM13 0h2v1h-2zM18 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM9 1h1v1h-1zM18 1h1v1h-1zM24 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM8 2h2v1h-2zM12 2h2v1h-2zM18 2h1v1h-1zM20 2h3v1h-3zM24 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM9 3h2v1h-2zM13 3h3v1h-3zM18 3h1v1h-1zM20 3h3v1h-3zM24 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM9 4h2v1h-2zM13 4h1v1h-1zM16 4h1v1h-1zM18 4h1v1h-1zM20 4h3v1h-3zM24 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM8 5h1v1h-1zM11 5h3v1h-3zM16 5h1v1h-1zM18 5h1v1h-1zM24 5h1v1h-1zM0 6h7v1h-7zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h7v1h-7zM9 7h1v1h-1zM12 7h1v1h-1zM16 7h1v1h-1zM0 8h1v1h-1zM2 8h1v1h-1zM6 8h2v1h-2zM9 8h1v1h-1zM14 8h1v1h-1zM16 8h1v1h-1zM19 8h1v1h-1zM22 8h1v1h-1zM24 8h1v1h-1zM0 9h2v1h-2zM4 9h2v1h-2zM7 9h1v1h-1zM9 9h1v1h-1zM13 9h1v1h-1zM15 9h2v1h-2zM18 9h2v1h-2zM21 9h1v1h-1zM23 9h2v1h-2zM1 10h4v1h-4zM6 10h1v1h-1zM8 10h1v1h-1zM15 10h1v1h-1zM19 10h1v1h-1zM21 10h2v1h-2zM24 10h1v1h-1zM1 11h1v1h-1zM3 11h1v1h-1zM7 11h1v1h-1zM9 11h2v1h-2zM12 11h1v1h-1zM14 11h5v1h-5zM21 11h1v1h-1zM0 12h2v1h-2zM6 12h1v1h-1zM9 12h4v1h-4zM16 12h1v1h-1zM18 12h2v1h-2zM24 12h1v1h-1zM1 13h1v1h-1zM3 13h2v1h-2zM7 13h2v1h-2zM10 13h1v1h-1zM15 13h2v1h-2zM18 13h2v1h-2zM23 13h2v1h-2zM0 14h5v1h-5zM6 14h1v1h-1zM8 14h2v1h-2zM11 14h1v1h-1zM13 14h3v1h-3zM21 14h2v1h-2zM24 14h1v1h-1zM4 15h1v1h-1zM7 15h1v1h-1zM11 15h2v1h-2zM14 15h2v1h-2zM19 15h3v1h-3zM0 16h4v1h-4zM5 16h3v1h-3zM9 16h1v1h-1zM12 16h1v1h-1zM15 16h6v1h-6zM23 16h1v1h-1zM8 17h4v1h-4zM13 17h2v1h-2zM16 17h1v1h-1zM20 17h1v1h-1zM24 17h1v1h-1zM0 18h7v1h-7zM8 18h2v1h-2zM11 18h1v1h-1zM13 18h2v1h-2zM16 18h1v1h-1zM18 18h1v1h-1zM20 18h1v1h-1zM24 18h1v1h-1zM0 19h1v1h-1zM6 19h1v1h-1zM10 19h1v1h-1zM14 19h3v1h-3zM20 19h1v1h-1zM24 19h1v1h-1zM0 20h1v1h-1zM2 20h3v1h-3zM6 20h1v1h-1zM10 20h3v1h-3zM15 20h6v1h-6zM23 20h1v1h-1zM0 21h1v1h-1zM2 21h3v1h-3zM6 21h1v1h-1zM9 21h1v1h-1zM11 21h2v1h-2zM14 21h1v1h-1zM16 21h2v1h-2zM20 21h1v1h-1zM22 21h2v1h-2zM0 22h1v1h-1zM2 22h3v1h-3zM6 22h1v1h-1zM8 22h6v1h-6zM19 22h3v1h-3zM23 22h2v1h-2zM0 23h1v1h-1zM6 23h1v1h-1zM9 23h1v1h-1zM12 23h1v1h-1zM14 23h1v1h-1zM16 23h2v1h-2zM19 23h2v1h-2zM0 24h7v1h-7zM8 24h1v1h-1zM11 24h2v1h-2zM15 24h4v1h-4zM21 24h1v1h-1zM24 24h1v1h-1z" fill="#000"/></g></svg>
+      </div>
+      <p class="cartel-url">bolt.com.ar/ayuda</p>
+      <p class="cartel-pie">Apuntá la cámara del celular al código.<br>
+        Gratis, sin comisiones. Dudas por WhatsApp: <strong>2914199938</strong></p>
+    </div>
+
+    <p class="no-papel">
+      <button class="btn-pdf" type="button" onclick="window.print()">🖨️ Imprimir el cartel</button>
+    </p>
+  </section>
+
   <div class="pie">
     <p>BOLT · Bahía Blanca, Argentina · <a href="/">bolt.com.ar</a> · <a href="/privacy.html">Privacidad</a> · <a href="/terms.html">Términos</a></p>
   </div>
 
 </main>
+
+<!-- Cuenta que se abrió esta página, y nada más: ni quién, ni de dónde.
+     Si falla, la página funciona igual. Ver visita.js. -->
+<script src="visita.js" data-pagina="indice"></script>
 
 </body>
 </html>
