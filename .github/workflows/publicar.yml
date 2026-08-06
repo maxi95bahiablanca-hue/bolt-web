@@ -1,0 +1,48 @@
+# Publica bolt.com.ar en GitHub Pages.
+#
+# Antes esto lo hacía el sistema viejo de Pages, que tardaba ~10 minutos por
+# despliegue y cuando fallaba decía "Page build failed" y nada más, sin log.
+# Con este workflow el despliegue tarda 1-2 minutos y, si algo sale mal, el
+# error se lee en la pestaña Actions del repositorio.
+#
+# El contenido se sube tal cual está en la rama: no hay compilación ni Jekyll.
+# El archivo CNAME viaja con el resto, que es lo que mantiene el dominio.
+
+name: Publicar bolt.com.ar
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        # y también a mano, desde la pestaña Actions
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Si se pushea dos veces seguidas, que no se pisen los despliegues.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.desplegar.outputs.page_url }}
+    steps:
+      - name: Traer los archivos
+        uses: actions/checkout@v4
+
+      - name: Preparar Pages
+        uses: actions/configure-pages@v5
+
+      - name: Empaquetar el sitio
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Publicar
+        id: desplegar
+        uses: actions/deploy-pages@v4
