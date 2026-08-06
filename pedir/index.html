@@ -70,6 +70,11 @@
   .nuevo:hover{border-color:var(--yellow);color:var(--yellow)}
   .paso{margin-left:auto;font-size:.68rem;font-weight:600;color:var(--muted2);letter-spacing:2px;text-transform:uppercase}
 
+  /* Panel de "tu contraseña" — el único modal de la página */
+  .fondoModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:60;align-items:center;justify-content:center;padding:18px}
+  .fondoModal.on{display:flex}
+  .cajaModal{width:100%;max-width:400px;background:#101214;border:1px solid var(--bord);border-radius:20px;padding:22px;max-height:92vh;overflow:auto;animation:sube .3s cubic-bezier(.16,.9,.3,1)}
+
   main{flex:1;padding:26px 18px 32px;display:flex;flex-direction:column}
   .pantalla{display:none;flex-direction:column;flex:1;animation:sube .45s cubic-bezier(.16,.9,.3,1)}
   .pantalla.on{display:flex}
@@ -327,6 +332,10 @@
       <div class="btn-row">
         <button class="btn" onclick="arrancar()">Continuar</button>
       </div>
+      <!-- Mi cuenta, sin tener que empezar un pedido para llegar. -->
+      <div style="text-align:center;margin-top:18px">
+        <button class="link" id="btnClave" onclick="abrirClave()">Cambiar mi contraseña</button>
+      </div>
     </section>
 
     <!-- 2. LAS PREGUNTAS, DE A UNA, EN TARJETA ───────────────────────── -->
@@ -381,6 +390,7 @@
         <div class="err" id="errDatos"></div>
         <div class="btn-row">
           <button class="btn" id="btnPedir" onclick="pedir()">Buscar profesionales</button>
+          <button class="btn sec" onclick="abrirClave()">Cambiar mi contraseña</button>
           <button class="btn sec" onclick="salir()">Salir de esta cuenta</button>
         </div>
       </div>
@@ -471,6 +481,34 @@
   </main>
 
   <div class="pie">BOLT ⚡ · <a href="/">Inicio</a> · <a href="/terms.html">Términos</a> · <a href="/privacy.html">Privacidad</a></div>
+</div>
+
+<!-- ── Cambiar la contraseña ───────────────────────────────────────────────
+     Existía "olvidé mi contraseña", que sirve para cuando NO podés entrar.
+     Estando adentro no había ninguna forma de cambiarla: el único camino era
+     desloguearse y fingir que te la olvidaste (Maxi, 6-ago-2026).
+
+     Va acá afuera, como panel propio y no adentro de un paso del pedido: si
+     estuviera en la pantalla de contacto, para cambiar la contraseña habría
+     que empezar un pedido. La cuenta es la misma de la app, así que cambiarla
+     acá la cambia en los dos lados. -->
+<div class="fondoModal" id="fondoClave" onclick="if(event.target===this) cerrarClave()">
+  <div class="cajaModal">
+    <h2 style="font-size:1.25rem;font-weight:600;margin-bottom:6px">Tu contraseña</h2>
+    <div id="filaClaveActual">
+      <label class="lbl">Tu contraseña de ahora</label>
+      <input class="campo" id="txtClaveActual" type="password" autocomplete="current-password" placeholder="La que usás hoy">
+    </div>
+    <label class="lbl">Contraseña nueva</label>
+    <input class="campo" id="txtClave1" type="password" autocomplete="new-password" placeholder="6 caracteres o más">
+    <label class="lbl">Repetila</label>
+    <input class="campo" id="txtClave2" type="password" autocomplete="new-password" placeholder="La misma otra vez">
+    <div class="err" id="errClave"></div>
+    <div class="btn-row">
+      <button class="btn" id="btnGuardarClave" onclick="guardarClave()">Guardar</button>
+      <button class="btn sec" onclick="cerrarClave()">Cancelar</button>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -869,12 +907,19 @@ async function usuarioActual(){
   return session?.user || null;
 }
 
+// ¿Tiene contraseña propia, o entró sólo con Google? Sale de las identidades
+// de la cuenta. Sin dato, asumimos que sí: pedirle la actual es lo que no
+// rompe nada. Lo usa el cambio de contraseña, más abajo.
+let TIENE_CLAVE = true;
+
 /** Muestra el login o el formulario del pedido, según haya sesión. */
 async function pintarSesion(){
   const u = await usuarioActual();
   if (!u) return null;
   S.userId = u.id;
   const meta = u.user_metadata || {};
+  TIENE_CLAVE = !u.identities?.length || u.identities.some(i => i.provider === 'email');
+  $('btnClave').textContent = TIENE_CLAVE ? 'Cambiar mi contraseña' : 'Poner una contraseña';
   $('subCuenta').textContent = 'Entraste como ' + (u.email || 'tu cuenta') + '. Estos datos los ve sólo el profesional que elijas.';
   if (!$('txtNombre').value) $('txtNombre').value = S.nombre || meta.nombre || meta.full_name || meta.name || '';
   if (!$('txtTel').value)    $('txtTel').value    = S.tel || meta.telefono || '';
@@ -991,6 +1036,75 @@ async function guardarClaveNueva(){
   if (error){ $('errNueva').textContent = 'No se pudo cambiar: ' + error.message; return; }
   await pintarSesion();
   ir(1);
+}
+
+// ─── Cambiar la contraseña estando adentro ──────────────────────────────────
+//
+// 🔴 El que entró con Google NO tiene contraseña: pedirle la actual sería
+//    pedirle algo que no existe y el botón fallaría sin explicar por qué. A ese
+//    le ofrecemos ponerle una, y a partir de ahí puede entrar con el correo sin
+//    depender de Google.  (`TIENE_CLAVE` se define arriba, en pintarSesion.)
+
+function abrirClave(){
+  $('filaClaveActual').style.display = TIENE_CLAVE ? 'block' : 'none';
+  $('errClave').style.color = 'var(--muted)';
+  $('errClave').textContent = TIENE_CLAVE
+    ? 'La misma te sirve para la app y para esta página.'
+    : 'Entrás con Google, así que todavía no tenés una. Si ponés una, vas a poder entrar también con tu correo.';
+  $('fondoClave').classList.add('on');
+  (TIENE_CLAVE ? $('txtClaveActual') : $('txtClave1')).focus();
+}
+
+function cerrarClave(){
+  $('fondoClave').classList.remove('on');
+  $('txtClaveActual').value = ''; $('txtClave1').value = ''; $('txtClave2').value = '';
+  $('errClave').textContent = '';
+}
+
+// Con Escape también se sale: un panel del que no se puede salir es
+// exactamente lo que la casa no permite.
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && $('fondoClave').classList.contains('on')) cerrarClave();
+});
+
+async function guardarClave(){
+  const err = $('errClave');
+  err.style.color = 'var(--yellow)';
+  const p1 = $('txtClave1').value, p2 = $('txtClave2').value;
+  if (p1.length < 6){ err.textContent = 'Necesita al menos 6 caracteres.'; return; }
+  if (p1 !== p2)   { err.textContent = 'Las dos no son iguales.'; return; }
+
+  const btn = $('btnGuardarClave');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    // Confirmar la actual antes de cambiarla: sin esto, cualquiera que agarre
+    // el teléfono desbloqueado deja al dueño afuera de su propia cuenta.
+    if (TIENE_CLAVE){
+      const u = await usuarioActual();
+      const { error: mala } = await sb.auth.signInWithPassword({
+        email: u?.email, password: $('txtClaveActual').value,
+      });
+      if (mala){ err.textContent = 'La contraseña actual no es esa. Probá de nuevo.'; return; }
+    }
+    const { error } = await sb.auth.updateUser({ password: p1 });
+    if (error){
+      err.textContent = /same|should be different/i.test(error.message || '')
+        ? 'Esa ya es tu contraseña actual. Poné una distinta.'
+        : 'No se pudo cambiar. Probá de nuevo en un momento.';
+      return;
+    }
+    const texto = TIENE_CLAVE
+      ? '✅ Contraseña cambiada. Usala la próxima vez, acá y en la app.'
+      : '✅ Listo. Ahora podés entrar con tu correo y esta contraseña.';
+    TIENE_CLAVE = true;
+    $('btnClave').textContent = 'Cambiar mi contraseña';
+    $('txtClaveActual').value = ''; $('txtClave1').value = ''; $('txtClave2').value = '';
+    err.style.color = 'var(--ok)';
+    err.textContent = texto;
+    setTimeout(cerrarClave, 2200);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Guardar';
+  }
 }
 
 async function salir(){
