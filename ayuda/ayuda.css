@@ -1,9 +1,28 @@
 /* ──────────────────────────────────────────────────────────────
    BOLT — Centro de ayuda
-   Tipografía nativa del sistema: la dibuja el celular, nunca se
-   descarga, nunca se ve pixelada. Sin webfonts, sin CDN.
+   Tipografía: Inter, hospedada en este mismo sitio (web/fuentes/).
+   NO se pide a Google ni a ningún CDN: si ese servidor tarda o
+   falla, el texto se ve mal, y eso es justo lo que no queremos.
+   Un solo archivo variable cubre todos los grosores (100–900).
+   Inter — Rasmus Andersson — SIL Open Font License 1.1
+   (el texto de la licencia está en web/fuentes/LICENSE.txt).
+   La del sistema queda de respaldo, nunca de principal.
    Paleta: blanco, amarillo y negro. Nada más.
    ────────────────────────────────────────────────────────────── */
+
+@font-face{
+  font-family:"Inter";
+  font-style:normal;
+  font-weight:100 900;          /* variable: un archivo, todos los pesos */
+  font-display:swap;            /* el texto se ve desde el primer momento */
+  src:url("../fuentes/InterVariable.woff2") format("woff2");
+  /* Latino: lo único que escribimos. Lo de afuera (emojis, símbolos
+     raros) lo sigue dibujando el sistema, que para eso está mejor. */
+  unicode-range:U+0000-00FF, U+0100-024F, U+0259, U+0131, U+0152-0153,
+                U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+                U+0329, U+1E00-1EFF, U+2000-206F, U+2074, U+20A0-20CF,
+                U+2122, U+2190-2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
 :root{
   --blanco:  #FFFFFF;
@@ -26,8 +45,12 @@ body{
   margin:0;
   background:var(--blanco);
   color:var(--negro);
-  font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-              "Helvetica Neue", Arial, sans-serif;
+  font-family:"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+              sans-serif;
+  /* Dos cosas que trae Inter y el sistema no: cv05 = la ele con cola
+     (para que "l" no se confunda con "I" ni con "1"), ss03 = comillas
+     y apóstrofos rectos. Es parte de por qué Linear se ve así. */
+  font-feature-settings:"cv05" 1, "ss03" 1;
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
   text-rendering:optimizeLegibility;
@@ -35,10 +58,12 @@ body{
   line-height:1.65;
 }
 
-/* Cifras siempre alineadas y legibles */
+/* Cifras siempre alineadas y legibles.
+   OJO: font-feature-settings NO se suma a lo heredado, lo reemplaza.
+   Por eso acá hay que repetir cv05 y ss03 además de tnum. */
 .num, .codigo, .paso::before, .tabla, time{
   font-variant-numeric:tabular-nums;
-  font-feature-settings:"tnum" 1;
+  font-feature-settings:"cv05" 1, "ss03" 1, "tnum" 1;
 }
 
 img,svg{ max-width:100%; height:auto; }
