@@ -564,7 +564,13 @@ img, .foto, .doc, .mapa-mini{
 }
 /* Y la caja es el contenedor. */
 #loginBox{
-  display:block !important;
+  /* 🔴 SIN !important en el display. El panel esconde esta caja al entrar con
+     `loginBox.style.display = 'none'`, y un !important de la hoja de estilos
+     LE GANA a un estilo en línea: con !important, el login quedaba fijo arriba
+     del panel para siempre, tapándolo. Pasó en producción el 7-ago-2026.
+     Como #loginBox es un id (especificidad 100) alcanza para pisar el
+     `display:grid` de .login (10), y el `none` de la línea sigue ganándole. */
+  display:block;
   width:min(92vw, 370px);
   margin:auto;
   padding:36px 32px !important;
