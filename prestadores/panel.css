@@ -521,3 +521,24 @@ img, .foto, .doc, .mapa-mini{
    del estilo viejo. Era el remate de un diseño con bordes; con la tarjeta
    flotando sin bordes, quedaba como una línea suelta arriba de todo. */
 .card::before{ display:none !important; content:none !important }
+
+/* ── El ingreso, ajustado ────────────────────────────────────────────────
+   `.login > *` agarraba TODOS los hijos —incluidos los pasos ocultos del
+   formulario— y eso estiraba la caja a lo alto con aire vacío. Se apunta sólo
+   al recuadro, y se le da un ancho de lectura. */
+.login > *{ background:transparent; backdrop-filter:none; -webkit-backdrop-filter:none; box-shadow:none }
+.login .caja, .login form, .login > div{
+  width:100%; max-width:380px; padding:34px 30px !important;
+  border-radius: var(--r-grande);
+  background: color-mix(in srgb, var(--surf) 62%, transparent);
+  backdrop-filter: blur(28px) saturate(1.35);
+  -webkit-backdrop-filter: blur(28px) saturate(1.35);
+  box-shadow: 0 34px 84px -34px rgba(0,0,0,.96);
+}
+/* El botón de entrar: amarillo lleno y sin resplandor. El halo era lo que
+   Maxi llamó "neón feo" — acá había quedado uno. */
+.login button{
+  width:100%; margin-top:10px;
+  box-shadow: var(--s-baja) !important;
+  filter:none !important;
+}
