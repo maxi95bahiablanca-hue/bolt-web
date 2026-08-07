@@ -1,0 +1,523 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   BOLT — la piel del panel
+   ──────────────────────────────────────────────────────────────────────────
+   Maxi, 7-ago-2026, en orden:
+     · "esos rectángulos son re feos, que todo quede redondeado y flotante"
+     · "botones traslúcidos, bien como la home"
+     · "el amarillo ponelo en letras, sacá esos neón feos"
+     · "eliminá los bordes de los recuadros, nada es cuadrado o rectangular"
+     · "tiene que tener fotos de fondo en diapositivas o algún efecto"
+     · "sombras en imágenes o botones"
+     · "la letra tiene que ser la de linear.app, Inter"
+
+   No toca la paleta (negro cálido + amarillo, tres colores a propósito) ni una
+   línea de lógica. Sólo la forma.
+
+   🔴 La regla que ordena todo el archivo: NADA se separa con una línea. Lo que
+   despega un elemento del fondo es la sombra y un vidrio apenas más claro. Un
+   borde de 1px es lo que hace que una pantalla parezca una planilla.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root{
+  --r-chico: 14px;
+  --r:       22px;
+  --r-grande:30px;
+  --pill:    999px;
+
+  /* Tres alturas de sombra. Dos capas cada una: una corta y densa que despega
+     del fondo, y una larga y suave que da el peso. */
+  --s-baja:  0 1px 3px rgba(0,0,0,.4),  0 6px 16px -8px rgba(0,0,0,.7);
+  --s-media: 0 2px 6px rgba(0,0,0,.45), 0 20px 46px -22px rgba(0,0,0,.92);
+  --s-alta:  0 3px 10px rgba(0,0,0,.5), 0 34px 76px -28px rgba(0,0,0,.96);
+}
+
+/* ── Inter, la de linear.app ──────────────────────────────────────────────
+   Ya venía cargada desde ../fuentes (archivo propio, no CDN). Acá se ajusta
+   cómo se usa: pesos intermedios en vez de negrita, y el tracking negativo
+   que escala con el tamaño, que es lo que hace que Linear se vea como se ve. */
+body, button, input, select, textarea{
+  font-family:"Inter", system-ui, sans-serif;
+  font-feature-settings:"cv05" 1, "cv11" 1, "ss03" 1;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.alerta-tit,.seccion{ font-weight:600; letter-spacing:-.028em; }
+.kpi b, .kpi .n, .kpi strong{ font-weight:600; letter-spacing:-.042em; }
+b, strong{ font-weight:600; }          /* nada de 700: el énfasis lo da el 600 */
+/* Todo número que se compara en columna, con ancho fijo: si no, la fila baila. */
+.kpi, .card, table, .n, .num{ font-variant-numeric: tabular-nums; }
+
+/* ══ Las diapositivas del fondo ═══════════════════════════════════════════
+   Cinco fotos que se van pasando con fundido, cada una acercándose despacio.
+   Van en capas propias y no en el body, para que el fundido de una no arrastre
+   a la otra. 40 segundos de vuelta completa: tiene que sentirse vivo, no
+   tiene que distraer a alguien que está trabajando. */
+.fondo{
+  position:fixed; inset:0; z-index:-3; overflow:hidden;
+  pointer-events:none;
+  background:var(--bg);
+}
+.fondo i{
+  position:absolute; inset:-7%;
+  display:block;
+  background-position:center; background-size:cover; background-repeat:no-repeat;
+  opacity:0;
+  filter:saturate(.72) contrast(1.06);
+  animation: bolt-diapo 40s linear infinite, bolt-acerca 20s ease-in-out infinite alternate;
+}
+.fondo i:nth-child(1){ background-image:url('../fotos/banner/b1.jpg'); animation-delay:0s,     0s }
+.fondo i:nth-child(2){ background-image:url('../fotos/banner/b2.jpg'); animation-delay:-8s,   -4s }
+.fondo i:nth-child(3){ background-image:url('../fotos/banner/b3.jpg'); animation-delay:-16s,  -8s }
+.fondo i:nth-child(4){ background-image:url('../fotos/banner/b4.jpg'); animation-delay:-24s, -12s }
+.fondo i:nth-child(5){ background-image:url('../fotos/banner/b5.jpg'); animation-delay:-32s, -16s }
+
+/* Cada foto está visible una quinta parte del ciclo, con el fundido adentro
+   de su propio turno para que nunca haya un instante en negro. */
+@keyframes bolt-diapo{
+  0%   { opacity:0 }
+  3%   { opacity:.46 }
+  17%  { opacity:.46 }
+  22%  { opacity:0 }
+  100% { opacity:0 }
+}
+@keyframes bolt-acerca{
+  from{ transform:scale(1)    translate3d(0,0,0) }
+  to  { transform:scale(1.12) translate3d(-1.4%,-1%,0) }
+}
+
+/* El velo: sin esto la foto se come el texto. Oscuro arriba para que la barra
+   se lea, casi negro abajo para que las tarjetas floten sobre algo. */
+.fondo::after{
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(180deg,
+    color-mix(in srgb, var(--bg) 86%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 66%, transparent) 24%,
+    color-mix(in srgb, var(--bg) 88%, transparent) 60%,
+    var(--bg) 100%);
+}
+
+/* ══ Nada de esquinas vivas, nada de bordes ═══════════════════════════════ */
+.card, .kpi, .alerta, .seccion, .mapa-mini, .grid > *,
+input, select, textarea, button, .chip, .tab, .fchip,
+.filtros, .buscar, .toast, .modal, .modal > *, img, .foto, .doc, table, td, th{
+  border-radius: var(--r-chico);
+}
+.card, .alerta, .modal > *{ border-radius: var(--r-grande) }
+.kpi, .mapa-mini, .seccion, .foto, .doc, img{ border-radius: var(--r) }
+.chip, .tab, .fchip, .buscar, input, select, .toast, button{ border-radius: var(--pill) }
+
+/* 🔴 Fuera TODOS los bordes. Lo que separa es la sombra y el vidrio. */
+.card, .kpi, .alerta, .chip, .tab, .fchip, .seccion, .mapa-mini,
+input, select, textarea, button, .filtros, .buscar, .toast,
+.modal, .modal > *, table, td, th, tr, .foto, .doc, img, hr{
+  border:0 !important;
+  outline:0;
+}
+hr, .divisor{
+  height:1px; background:rgba(255,255,255,.055);
+  border-radius:0 !important;
+}
+
+/* ══ Todo flota ═══════════════════════════════════════════════════════════ */
+.card, .kpi, .alerta{
+  background: color-mix(in srgb, var(--surf) 78%, transparent);
+  backdrop-filter: blur(20px) saturate(1.25);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  box-shadow: var(--s-media);
+  transition: transform .28s cubic-bezier(.16,1,.3,1),
+              box-shadow .28s cubic-bezier(.16,1,.3,1);
+}
+.card:hover{ transform: translateY(-4px); box-shadow: var(--s-alta) }
+
+header{
+  position:sticky; top:0; z-index:30;
+  background: color-mix(in srgb, var(--bg) 58%, transparent);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  box-shadow: 0 1px 0 rgba(255,255,255,.045), 0 10px 30px -20px rgba(0,0,0,.9);
+}
+
+/* ══ Botones: vidrio con sombra ═══════════════════════════════════════════ */
+button{
+  background: rgba(255,255,255,.065);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  color: var(--tx);
+  box-shadow: var(--s-baja);
+  transition: transform .16s cubic-bezier(.16,1,.3,1), box-shadow .16s ease,
+              background .16s ease;
+}
+button:hover{
+  transform: translateY(-2px);
+  background: rgba(255,255,255,.115);
+  box-shadow: var(--s-media);
+}
+button:active{ transform: translateY(0); box-shadow: var(--s-baja) }
+
+/* El amarillo va en la LETRA. Lleno, sólo el de entrar. */
+button.pri, button.acc, button.aceptar, #sendBtn, #verifyBtn{
+  color: var(--y);
+  background: color-mix(in srgb, var(--y) 10%, rgba(255,255,255,.04));
+}
+button.pri:hover, button.acc:hover, button.aceptar:hover,
+#sendBtn:hover, #verifyBtn:hover{ color:#141210; background: var(--y) }
+.login button{ background: var(--y); color:#141210; box-shadow:0 10px 30px -12px rgba(0,0,0,.9) }
+.login button:hover{ background: var(--y-soft) }
+
+button.peligro, button.rechazar, button.eliminar{ color: var(--mut) }
+button.peligro:hover, button.rechazar:hover, button.eliminar:hover{ color: var(--tx) }
+
+/* ══ Chips: letra amarilla, nunca bloque ══════════════════════════════════ */
+.chip, .fchip, .alerta-quienes > *{
+  background: color-mix(in srgb, var(--y) 7%, rgba(255,255,255,.035)) !important;
+  color: var(--y) !important;
+  font-weight: 550;
+  box-shadow: var(--s-baja);
+}
+.chip.gris, .chip.mut, .chip.neutro{
+  background: rgba(255,255,255,.04) !important;
+  color: var(--mut) !important;
+}
+.chip:hover, .fchip:hover{ background: color-mix(in srgb, var(--y) 15%, transparent) !important }
+
+.tab{ background: rgba(255,255,255,.05); box-shadow:none }
+.tab:hover{ transform: translateY(-1px); background: rgba(255,255,255,.09) }
+.tab.on{
+  color: var(--y);
+  background: color-mix(in srgb, var(--y) 11%, transparent);
+  box-shadow: var(--s-baja);
+}
+
+/* El estado del prestador: la única etiqueta que va con amarillo lleno. Es una
+   por tarjeta y es el dato que se busca al recorrer la lista. */
+.card .estado, .card .badge, .estado-aceptado{
+  background: var(--y) !important; color:#141210 !important;
+  font-weight: 650; letter-spacing:.02em;
+  box-shadow: var(--s-baja);
+}
+
+/* ══ Campos ═══════════════════════════════════════════════════════════════ */
+input, select, textarea, .buscar{
+  background: rgba(255,255,255,.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--tx);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.35);
+}
+input::placeholder, textarea::placeholder{ color: var(--mut2) }
+input:focus, select:focus, textarea:focus{
+  outline:none;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.35),
+              0 0 0 2px color-mix(in srgb, var(--y) 40%, transparent);
+}
+
+/* ══ Imágenes y mapas: con sombra, sin marco ══════════════════════════════ */
+img, .foto, .doc, .mapa-mini{
+  box-shadow: var(--s-media);
+  overflow:hidden;
+}
+.mapa-mini{ box-shadow: var(--s-media), inset 0 0 34px rgba(0,0,0,.5) }
+.leaflet-container{ background: var(--surf) !important }
+.avatar, .card img[class*="avatar"]{ box-shadow: var(--s-baja) }
+
+/* ══ Los dibujos (reemplazaron a los emojis) ══════════════════════════════ */
+.ic{ width:1.05em; height:1.05em; flex:none; vertical-align:-.16em; stroke-width:1.9 }
+.chip .ic, .fchip .ic{ opacity:.9 }
+@keyframes bolt-late{ 0%,100%{opacity:.5} 50%{opacity:1} }
+.radar-on .ic, .chip.on .ic{ animation: bolt-late 2.4s ease-in-out infinite; color:var(--y) }
+
+/* ══ Que entre con vida ═══════════════════════════════════════════════════ */
+@keyframes bolt-entra{ from{ opacity:0; transform:translateY(14px) } to{ opacity:1; transform:none } }
+.grid > *{ animation: bolt-entra .5s cubic-bezier(.16,1,.3,1) backwards }
+.grid > *:nth-child(1){animation-delay:.02s} .grid > *:nth-child(2){animation-delay:.06s}
+.grid > *:nth-child(3){animation-delay:.10s} .grid > *:nth-child(4){animation-delay:.14s}
+.grid > *:nth-child(5){animation-delay:.18s} .grid > *:nth-child(6){animation-delay:.22s}
+.grid > *:nth-child(7){animation-delay:.26s} .grid > *:nth-child(8){animation-delay:.30s}
+.grid > *:nth-child(n+9){animation-delay:.34s}
+
+/* ══ El ingreso ═══════════════════════════════════════════════════════════ */
+.login{
+  position:fixed; inset:0; z-index:80;
+  display:grid; place-items:center; padding:24px;
+  background:transparent;
+}
+.login > *, .login form, .login .caja, .login-caja{
+  border-radius: var(--r-grande);
+  background: color-mix(in srgb, var(--surf) 62%, transparent);
+  backdrop-filter: blur(28px) saturate(1.35);
+  -webkit-backdrop-filter: blur(28px) saturate(1.35);
+  box-shadow: 0 34px 84px -34px rgba(0,0,0,.96);
+}
+.login input{ background: rgba(255,255,255,.06) }
+
+/* ══ Quieto para quien lo pidió ═══════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce){
+  .fondo i{ animation:none; opacity:.34; transform:scale(1.05) }
+  .fondo i:nth-child(n+2){ display:none }
+  .grid > *{ animation:none }
+  .card, button, .chip, .fchip, .tab{ transition:none }
+  .card:hover, button:hover{ transform:none }
+  .radar-on .ic, .chip.on .ic{ animation:none }
+}
+
+/* El contador al lado del nombre de la pestaña Avisos. */
+.tab .cuenta{ margin-left:7px; font-weight:650; font-size:.82em; opacity:0 }
+.tab .cuenta.hay{
+  opacity:1; color:#141210;
+  background:var(--y); border-radius:var(--pill);
+  padding:1px 7px; line-height:1.5;
+}
+
+/* ── Fuera los resplandores que quedaban en el estilo viejo ───────────────
+   El panel original marcaba lo activo con un halo amarillo alrededor
+   (`.card.activo`, `.kpi.destacado`, el rayo del logo). Eso era el "neón feo":
+   sobre las tarjetas nuevas dibujaba un contorno que parece un borde.
+   Lo activo ahora se marca con un punto amarillo arriba a la derecha —
+   un detalle chico y quieto, en vez de un halo alrededor de todo. */
+.card.activo, .kpi.destacado, .tab.on, .marca svg, .marca i{
+  box-shadow: var(--s-media) !important;
+}
+.kpi.destacado{ box-shadow: var(--s-media) !important }
+.tab.on{ box-shadow: var(--s-baja) !important }
+
+.card.activo{ position:relative }
+.card.activo::after{
+  content:''; position:absolute; top:14px; right:14px;
+  width:7px; height:7px; border-radius:50%;
+  background:var(--y);
+  box-shadow:none;
+}
+
+/* La `inset` amarilla de .card.activo dibujaba una franja arriba de la tarjeta
+   que se leía como un borde. Se va: el punto de arriba a la derecha alcanza. */
+.card.activo{ box-shadow: var(--s-media) !important }
+.card.activo:hover{ box-shadow: var(--s-alta) !important }
+
+/* Las separaciones internas de la tarjeta (datos / acciones) eran líneas de
+   1px. Pasan a un degradado que se apaga en las puntas: separa igual, pero no
+   dibuja un rectángulo adentro de la tarjeta. */
+.acciones, .datos, .card .fila-sep{
+  border-top:0 !important;
+  position:relative;
+}
+.acciones::before, .datos::before{
+  content:''; position:absolute; top:0; left:6%; right:6%; height:1px;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.09), transparent);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LAS TARJETAS — rehechas
+   ──────────────────────────────────────────────────────────────────────────
+   Maxi, 7-ago-2026: "no me gustan las tarjetas, las letras adentro no son
+   Inter, el diseño quedó obsoleto al lado de todo lo que tenemos".
+
+   Dos problemas distintos, los dos reales:
+
+   1. LA LETRA SÍ ERA INTER, pero en pesos que no usamos en ningún otro lado:
+      700 y 800, cuando Wooten y Big Pizza están en 500/560. Un 800 de Inter es
+      casi negrita máxima — por eso "no parece la misma letra". Toda la escala
+      baja acá abajo.
+
+   2. LA FICHA ERA UNA PLANILLA: etiqueta a la izquierda, dato a la derecha,
+      seis filas iguales de arriba a abajo. Eso es una tabla de base de datos
+      con forma de tarjeta. Ahora la etiqueta es un rótulo chiquito ARRIBA del
+      dato, el dato manda, y lo que importa —si puede trabajar o no— se lee
+      antes que el mail.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Los pesos, alineados con el resto del sistema ─────────────────── */
+.card, .card *, .kpi, .kpi *, .alerta, .alerta *{
+  font-weight: 450;
+}
+.card .cnom{ font-weight: 560 !important }
+.alerta-tit, .seccion, .kpi b, .kpi .n, .kpi strong, h1, h2, h3{ font-weight: 560 !important }
+.chip, .fchip, .tab, button{ font-weight: 500 !important }
+.card .est, .card .estado, .card .badge{ font-weight: 560 !important }
+.card b, .card strong{ font-weight: 560 !important }
+
+/* ── 2. La cabecera: el nombre manda ──────────────────────────────────── */
+.card{ padding: 20px 20px 16px }
+.card .ctop{ align-items: flex-start; gap: 13px }
+.card .av{
+  width: 46px; height: 46px;
+  font-weight: 560 !important;
+  font-size: 1rem;
+  letter-spacing:-.02em;
+}
+.card .cnom{
+  font-size: 1.06rem;
+  letter-spacing: -.028em;
+  line-height: 1.25;
+}
+.card .csub{
+  font-size: .78rem;
+  color: var(--mut2);
+  margin-top: 3px;
+  letter-spacing: 0;
+}
+.card .chips{ margin-top: 10px; gap: 6px }
+.card .chip{ font-size: .715rem; padding: 4px 10px; letter-spacing:.005em }
+
+/* El estado deja de ser un cartel amarillo gigante arriba a la derecha: pasa a
+   ser una palabra chica en versalitas. Se sigue encontrando de un vistazo
+   porque está siempre en el mismo lugar, no porque grite. */
+.card .est{
+  background: transparent !important;
+  color: var(--mut) !important;
+  font-size: .66rem !important;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  padding: 4px 0 0 !important;
+  box-shadow: none !important;
+}
+.card .est.ok{ color: var(--y) !important }
+.card .est.no{ color: var(--mut2) !important }
+
+/* ── 3. Los datos: rótulo arriba, dato abajo ──────────────────────────── */
+.card .datos{
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 14px 16px;
+  margin-top: 18px;
+  padding-top: 16px;
+}
+.card .datos dt{
+  font-size: .64rem;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  color: var(--mut2);
+  margin-bottom: 3px;
+  font-weight: 500 !important;
+}
+.card .datos dd{
+  font-size: .86rem;
+  color: var(--tx);
+  line-height: 1.45;
+  margin: 0;
+  word-break: break-word;
+}
+.card .datos dd a{ color: var(--tx); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.16) }
+.card .datos dd a:hover{ border-bottom-color: var(--y); color: var(--y) }
+.card .datos .orig{ color: var(--mut2); font-size: .74rem }
+.card .datos .falta{ color: var(--mut2); font-style: normal; font-size: .8rem }
+
+/* Lo que le falta a alguien para poder trabajar ocupa la fila entera: es la
+   única línea de la tarjeta sobre la que hay algo para hacer. */
+.card .datos dt:last-of-type, .card .datos dd:last-of-type{ grid-column: 1 / -1 }
+
+/* ── 4. El mapa: más bajo, que es un apoyo y no el protagonista ───────── */
+.card .mapa-mini{ height: 96px; margin-top: 16px }
+
+/* ── 5. Las acciones: una fila que respira ────────────────────────────── */
+.card .acciones{ margin-top: 16px; padding-top: 14px; gap: 7px }
+.card .acciones button{ font-size: .76rem !important; padding: 7px 13px }
+
+/* ── Cada dato, con su rótulo arriba ──────────────────────────────────────
+   Ahora cada par rótulo+dato viene envuelto en su propio bloque, así que la
+   grilla los acomoda en columnas sin que se desarmen. Antes eran seis filas
+   de "etiqueta a la izquierda, valor a la derecha": una planilla. */
+.card .datos{ display:grid !important; grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
+  gap:15px 18px; margin-top:18px; padding-top:16px }
+.card .dato{ min-width:0 }
+.card .dato.ancho{ grid-column:1 / -1 }
+.card .datos dt{
+  display:block; font-size:.63rem; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--mut2); margin-bottom:4px; font-weight:500 !important;
+}
+.card .datos dd{ display:block; margin:0; font-size:.87rem; line-height:1.45; color:var(--tx) }
+
+/* ── Relleno sólido en las fichitas y en el estado ────────────────────────
+   Maxi, 7-ago: "no me gusta el botón de aceptado, quiero que tenga relleno
+   como las fichitas del oficio, no me gustan así transparentes".
+   El amarillo vuelve a ser relleno acá —oficio y estado— porque son las dos
+   cosas que se buscan al recorrer la lista. El resto sigue en letra. */
+.card .chip{
+  background: var(--y) !important;
+  color:#141210 !important;
+  font-weight: 560 !important;
+  box-shadow: var(--s-baja);
+}
+.card .chip.gris{
+  background: rgba(255,255,255,.09) !important;
+  color: var(--mut) !important;
+}
+.card .est{
+  background: var(--y) !important;
+  color:#141210 !important;
+  font-size:.66rem !important;
+  font-weight:650 !important;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  padding:5px 11px !important;
+  border-radius:var(--pill);
+  box-shadow: var(--s-baja) !important;
+}
+.card .est.no, .card .est.pend{
+  background: rgba(255,255,255,.1) !important;
+  color: var(--mut) !important;
+}
+
+/* 🔴 Colisión de mi propia cascada: unas líneas más arriba había quedado
+   `.card .est.ok{ color: var(--y) }` de cuando el estado era transparente con
+   letra amarilla. Con el relleno amarillo nuevo, esa regla —más específica—
+   ganaba y pintaba el texto AMARILLO SOBRE AMARILLO: la pastilla se veía
+   vacía. Al agregar estilos encima de estilos, esto es lo que hay que buscar
+   primero cuando algo "desaparece". */
+.card .est.ok,
+.card .est.aceptado{
+  background: var(--y) !important;
+  color: #141210 !important;
+}
+.card .est.no,
+.card .est.pend{
+  background: rgba(255,255,255,.1) !important;
+  color: var(--mut) !important;
+}
+
+/* ── La línea amarilla que quedaba arriba de cada tarjeta ────────────────
+   No era un borde: el estilo viejo pinta la tarjeta con un
+   `radial-gradient(... at 0% 0%, #FFD6000e ...)`, un resplandor amarillo en la
+   esquina de arriba. Sobre el fondo nuevo se leía como una raya. */
+.card{
+  background: color-mix(in srgb, var(--surf) 78%, transparent) !important;
+  background-image: none !important;
+}
+.card:hover{ border-color: transparent !important }
+.card.activo{
+  background: color-mix(in srgb, var(--surf) 82%, transparent) !important;
+  background-image: none !important;
+}
+
+/* Los KPI arrastraban el mismo gradiente. */
+.kpi, .kpi.destacado{
+  background: color-mix(in srgb, var(--surf) 76%, transparent) !important;
+  background-image: none !important;
+}
+/* El que está destacado se marca con el número en amarillo, no con un halo. */
+.kpi.destacado .n, .kpi.destacado b, .kpi.destacado strong{ color: var(--y) !important }
+
+/* ── Repaso de las otras pestañas ────────────────────────────────────────
+   Clientes y Trabajos usan las mismas clases, así que ya heredan todo. Lo que
+   sigue es lo propio de esas vistas. */
+.seccion{
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: .72rem; letter-spacing: .13em; text-transform: uppercase;
+  color: var(--mut2); font-weight: 500 !important;
+  margin: 26px 0 12px; padding: 0 0 0 12px;
+  position: relative;
+}
+.seccion::before{
+  content:''; position:absolute; left:0; top:50%; transform:translateY(-50%);
+  width:3px; height:13px; border-radius:var(--pill); background:var(--y);
+}
+.vacio, .sin-ubi{
+  background: rgba(255,255,255,.03);
+  border-radius: var(--r);
+  color: var(--mut2); font-size: .84rem;
+  padding: 22px; text-align: center;
+}
+
+/* La raya amarilla de 2px arriba de cada tarjeta venía de un `.card::before`
+   del estilo viejo. Era el remate de un diseño con bordes; con la tarjeta
+   flotando sin bordes, quedaba como una línea suelta arriba de todo. */
+.card::before{ display:none !important; content:none !important }

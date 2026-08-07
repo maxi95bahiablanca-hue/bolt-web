@@ -231,12 +231,16 @@
     .kpi b{font-size:1.5rem}
   }
 </style>
+<link rel="stylesheet" href="panel.css">
 </head>
 <body>
+<!-- El fondo: cinco fotos que se pasan solas. Lo maneja panel.css. -->
+<div class="fondo" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+
 
 <!-- ── LOGIN ──────────────────────────────────────────────────────────── -->
 <div id="loginBox" class="login">
-  <div class="logo"><i>⚡</i> BOLT</div>
+  <div class="logo"><i><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 2.6 4.8 13.4h6L9.9 21.4l8.6-11h-6.2z"/></svg></i> BOLT</div>
   <p>Panel de administración</p>
   <div id="step1">
     <input id="email" type="email" placeholder="tu email de admin" autocomplete="username"
@@ -258,7 +262,7 @@
 <div id="app" style="display:none">
   <header>
     <div class="hwrap">
-      <div class="logo"><i>⚡</i> BOLT</div>
+      <div class="logo"><i><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 2.6 4.8 13.4h6L9.9 21.4l8.6-11h-6.2z"/></svg></i> BOLT</div>
       <nav class="tabs">
         <button class="tab on" data-t="prestadores" onclick="irA('prestadores')">Prestadores</button>
         <button class="tab" data-t="clientes"  onclick="irA('clientes')">Clientes</button>
@@ -266,23 +270,24 @@
         <button class="tab" data-t="mapa"      onclick="irA('mapa')">Mapa</button>
         <button class="tab" data-t="fotos"     onclick="irA('fotos')">Fotos</button>
         <button class="tab" data-t="metricas"  onclick="irA('metricas')">Métricas</button>
+        <button class="tab" data-t="avisos" onclick="irA('avisos')">Avisos<span id="avisosN" class="cuenta"></span></button>
       </nav>
       <button class="salir" onclick="logout()">Salir</button>
     </div>
   </header>
 
   <main>
-    <!-- 🔴 Lo que no puede pasar desapercibido: gente aprobada que NO puede
+    <!-- <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.6v5"/><circle cx="12" cy="16.2" r=".95" fill="currentColor" stroke="none"/></svg> Lo que no puede pasar desapercibido: gente aprobada que NO puede
          recibir un solo trabajo. Va arriba de todo y en rojo porque cada uno
          de estos es un trabajador perdido en silencio (Maxi, 1-ago: "es algo
          que no puede pasar, error grave que pierde trabajadores"). -->
-    <div id="alertas"></div>
+    <!-- Los avisos viven en su pestaña: ver la sección v-avisos, más abajo. -->
 
     <div class="kpis" id="kpis"></div>
 
     <section id="v-prestadores">
       <div class="filtros">
-        <button class="fchip" id="chipRadar" onclick="alternarRadar()">📡 Sólo con radar prendido</button>
+        <button class="fchip" id="chipRadar" onclick="alternarRadar()"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="19" r="1.6"/><path d="M12 15.4a3.6 3.6 0 0 1 3.6 3.6"/><path d="M12 11.2a7.8 7.8 0 0 1 7.8 7.8"/><path d="M12 6.9a11.9 11.9 0 0 1 11.9 11.9"/></svg> Sólo con radar prendido</button>
         <input class="buscar" id="fBuscar" type="text" placeholder="Buscar por nombre, mail o teléfono…" oninput="render()">
         <select id="fEstado" onchange="render()">
           <option value="">Todos los estados</option>
@@ -330,6 +335,11 @@
       <div class="grid" id="embudo"></div>
       <div class="seccion">Progreso por oficio</div>
       <div class="grid" id="porOficio"></div>
+    </section>
+
+    <section id="v-avisos" class="oculto">
+      <div class="seccion">Lo que necesita una mano</div>
+      <div id="alertas"></div>
     </section>
   </main>
 </div>
@@ -389,7 +399,7 @@ function entrar(){ $('loginBox').style.display = 'none'; $('app').style.display 
 // ── Navegación ───────────────────────────────────────────────────────────
 function irA(vista){
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === vista));
-  ['prestadores','clientes','trabajos','mapa','fotos','metricas'].forEach(v =>
+  ['prestadores','clientes','trabajos','mapa','fotos','metricas','avisos'].forEach(v =>
     $('v-' + v).classList.toggle('oculto', v !== vista));
   if (vista === 'mapa')  setTimeout(pintarMapaGrande, 60);
   if (vista === 'fotos') cargarFotos();
@@ -424,20 +434,20 @@ async function cargarFotos(){
   const pend = FOTOS.filter(f => f.estado === 'pendiente');
   const apro = FOTOS.filter(f => f.estado === 'aprobada');
   $('fotosPendientes').innerHTML = pend.length ? pend.map(tarjeta).join('')
-    : '<div class="vacio">No hay fotos esperando. 👌</div>';
+    : '<div class="vacio">No hay fotos esperando. <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11.2h2.6v9.2H7a1.4 1.4 0 0 1-1.4-1.4v-6.4A1.4 1.4 0 0 1 7 11.2z"/><path d="M9.6 11.2 13 4.1a2 2 0 0 1 3.8 1.2l-.7 4h3.6a1.9 1.9 0 0 1 1.9 2.3l-1.2 6a1.9 1.9 0 0 1-1.9 1.5H9.6"/></svg></div>';
   $('fotosAprobadas').innerHTML = apro.length ? apro.map(tarjeta).join('')
     : '<div class="vacio">Todavía nadie publicó fotos de sus trabajos.</div>';
 }
 async function moderarFoto(id, estado){
   const { error } = await sb.from('professional_photos').update({ estado }).eq('id', id);
   if (error) return aviso('No se pudo: ' + error.message, 'bad');
-  aviso(estado === 'aprobada' ? 'Publicada ✅' : 'Bajada');
+  aviso(estado === 'aprobada' ? 'Publicada <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.6 4.4 4.4L19 7.4"/></svg>' : 'Bajada');
   cargarFotos();
 }
 
 // ── Carga ────────────────────────────────────────────────────────────────
 async function cargarTodo(){
-  // ⚠️ cargarClientes() arma la lista A PARTIR de los trabajos, así que NO puede
+  // <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4.6"/><circle cx="12" cy="17" r=".95" fill="currentColor" stroke="none"/><path d="M10.3 4.6 2.8 17.8a1.9 1.9 0 0 0 1.7 2.9h15a1.9 1.9 0 0 0 1.7-2.9L13.7 4.6a1.9 1.9 0 0 0-3.4 0z"/></svg> cargarClientes() arma la lista A PARTIR de los trabajos, así que NO puede
   // ir en el mismo Promise.all: se ejecutaba con TRABAJOS todavía vacío y el
   // panel mostraba "Clientes: 0" teniendo trabajos en curso (1-ago-2026).
   await Promise.all([cargarCatalogo(), cargarLeads(), cargarProfesionales(), cargarTrabajos()]);
@@ -494,7 +504,7 @@ function datosDe(x){
   return FICHA[x?.prof?.user_id || x?.lead?.user_id] || {};
 }
 
-// 🔴 La lista NO puede salir sólo de los leads: los dos únicos profesionales
+// <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.6v5"/><circle cx="12" cy="16.2" r=".95" fill="currentColor" stroke="none"/></svg> La lista NO puede salir sólo de los leads: los dos únicos profesionales
 // que hoy pueden trabajar —Maxi (Pintor + Durlock) y Leonardo (Fletes)— NO
 // TIENEN LEAD, así que no aparecían en ningún lado (Maxi, 1-ago: "no figuro yo
 // en pintor y en durlock"). Se arma la lista con los profesionales REALES y se
@@ -567,6 +577,15 @@ async function cargarTrabados(){
 // el sistema no lo encuentra, sin radar no aparece, sin avisos no se entera.
 // Cada uno de esos casos es un trabajador que se anotó y quedó en la nada sin
 // que nadie lo note. Por eso va arriba de todo, antes que cualquier métrica.
+// Cuántos avisos hay, al lado del nombre de la pestaña. Sin número cuando
+// no hay nada: un cero permanente enseña a ignorar el contador.
+function pintarCuentaAvisos(n){
+  const el = document.getElementById('avisosN');
+  if (!el) return;
+  el.textContent = n ? String(n) : '';
+  el.classList.toggle('hay', !!n);
+}
+
 function pintarAlertas(){
   const aprobados = PROFS.filter(p => p.verification_status === 'approved');
   const sinOficio = aprobados.filter(p => !(p.professional_professions || []).length);
@@ -611,21 +630,22 @@ function pintarAlertas(){
   // Cada persona con su botón de WhatsApp y el mensaje ya escrito: la alerta
   // sin la acción al lado es una alerta que no se resuelve (Maxi, 1-ago).
   $('alertas').innerHTML = bloques.length ? bloques.map(b => `
+  pintarCuentaAvisos(document.querySelectorAll('#alertas .alerta').length);
     <div class="alerta ${b.tono === 'grave' ? 'grave' : ''}">
-      <div class="alerta-tit">${b.tono === 'grave' ? '🔴' : '⚠️'} ${esc(b.titulo)}</div>
+      <div class="alerta-tit">${b.tono === 'grave' ? '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.6v5"/><circle cx="12" cy="16.2" r=".95" fill="currentColor" stroke="none"/></svg>' : '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4.6"/><circle cx="12" cy="17" r=".95" fill="currentColor" stroke="none"/><path d="M10.3 4.6 2.8 17.8a1.9 1.9 0 0 0 1.7 2.9h15a1.9 1.9 0 0 0 1.7-2.9L13.7 4.6a1.9 1.9 0 0 0-3.4 0z"/></svg>'} ${esc(b.titulo)}</div>
       <div class="alerta-txt">${esc(b.texto)}</div>
       <div class="alerta-quienes">
         ${b.gente.map(p => {
           const tel = telefonoDe(p);
           const nom = `${p.first_name || ''} ${p.last_name || ''}`.trim();
           if (tel) return `<button class="b wa" style="font-size:.74rem;padding:5px 10px"
-                 onclick="avisar('${esc(tel)}','${esc(p.first_name || nom)}','${b.motivo}')">💬 ${esc(nom)}</button>`;
+                 onclick="avisar('${esc(tel)}','${esc(p.first_name || nom)}','${b.motivo}')"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 12.1c0 4-3.9 7.2-8.6 7.2-1.1 0-2.2-.2-3.2-.5l-5.4 1.5 1.7-4a6.8 6.8 0 0 1-1.7-4.2c0-4 3.9-7.2 8.6-7.2s8.6 3.2 8.6 7.2z"/></svg> ${esc(nom)}</button>`;
           // Sin teléfono queda el mail, que es justamente por donde hay que
           // pedirle el teléfono. Dejarlo en un cartel gris era un callejón.
           const mail = FICHA[p.user_id]?.email;
           return mail
             ? `<a class="b mail" style="font-size:.74rem;padding:5px 10px;text-decoration:none"
-                 href="mailto:${esc(mail)}?subject=${encodeURIComponent('Tu WhatsApp para BOLT')}&body=${encodeURIComponent(`Hola ${p.first_name || nom}! Soy Maxi de BOLT. Nos falta tu WhatsApp para poder avisarte cuando entre un trabajo. Me lo pasás respondiendo este mail?`)}">✉️ ${esc(nom)}</a>`
+                 href="mailto:${esc(mail)}?subject=${encodeURIComponent('Tu WhatsApp para BOLT')}&body=${encodeURIComponent(`Hola ${p.first_name || nom}! Soy Maxi de BOLT. Nos falta tu WhatsApp para poder avisarte cuando entre un trabajo. Me lo pasás respondiendo este mail?`)}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="5.4" width="18.4" height="13.2" rx="2.4"/><path d="m3.4 7 8.6 6 8.6-6"/></svg> ${esc(nom)}</a>`
             : `<span class="chip gris">${esc(nom)} — sin teléfono ni mail</span>`;
         }).join('')}
       </div>
@@ -765,8 +785,8 @@ function tarjetaPrestador(x){
         <div class="csub">${esc(l?.ciudad || 'Bahía Blanca')}${l?.zona ? ' · ' + esc(l.zona) : ''}${l ? ' · anotado ' + fecha(l.created_at) : ' · registrado en la app'}</div>
         <div class="chips">
           ${ofs.length ? ofs.map(o => `<span class="chip">${esc(o)}</span>`).join('') : '<span class="chip gris">sin oficio</span>'}
-          ${enElMapa(p) ? '<span class="chip">📡 radar prendido</span>'
-            : (p?.available ? '<span class="chip gris">📡 sin ubicación</span>' : '')}
+          ${enElMapa(p) ? '<span class="chip"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="19" r="1.6"/><path d="M12 15.4a3.6 3.6 0 0 1 3.6 3.6"/><path d="M12 11.2a7.8 7.8 0 0 1 7.8 7.8"/><path d="M12 6.9a11.9 11.9 0 0 1 11.9 11.9"/></svg> radar prendido</span>'
+            : (p?.available ? '<span class="chip gris"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="19" r="1.6"/><path d="M12 15.4a3.6 3.6 0 0 1 3.6 3.6"/><path d="M12 11.2a7.8 7.8 0 0 1 7.8 7.8"/><path d="M12 6.9a11.9 11.9 0 0 1 11.9 11.9"/></svg> sin ubicación</span>' : '')}
           ${puede ? '' : '<span class="chip gris">no recibe trabajos</span>'}
           ${!l ? '<span class="chip gris">sin ficha de registro</span>' : ''}
         </div>
@@ -775,34 +795,34 @@ function tarjetaPrestador(x){
     </div>
 
     <dl class="datos">
-      <dt>Mail</dt><dd>${mail
+      <div class="dato"><dt>Mail</dt><dd>${mail
         ? `<a href="mailto:${esc(mail)}">${esc(mail)}</a>${f.email_origen === 'cuenta' ? ' <span class="orig">· de su cuenta</span>' : ''}`
-        : '<span class="falta">nadie lo cargó nunca — hay que pedírselo</span>'}</dd>
-      <dt>WhatsApp</dt><dd>${telMostrar
+        : '<span class="falta">nadie lo cargó nunca — hay que pedírselo</span>'}</dd></div>
+      <div class="dato"><dt>WhatsApp</dt><dd>${telMostrar
         ? esc(telMostrar) + (f.telefono_origen === 'registro' ? ' <span class="orig">· del registro</span>' : '')
-        : '<span class="falta">nadie lo cargó nunca — hay que pedírselo</span>'}</dd>
-      <dt>Avisos</dt><dd>${(() => {
-        // ⚠️ El token de push NO prueba que tenga la app: prueba que aceptó las
+        : '<span class="falta">nadie lo cargó nunca — hay que pedírselo</span>'}</dd></div>
+      <div class="dato"><dt>Avisos</dt><dd>${(() => {
+        // <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4.6"/><circle cx="12" cy="17" r=".95" fill="currentColor" stroke="none"/><path d="M10.3 4.6 2.8 17.8a1.9 1.9 0 0 0 1.7 2.9h15a1.9 1.9 0 0 0 1.7-2.9L13.7 4.6a1.9 1.9 0 0 0-3.4 0z"/></svg> El token de push NO prueba que tenga la app: prueba que aceptó las
         // NOTIFICACIONES. José la tiene instalada, la usa y es tester, y no
         // tiene token — se salteó ese permiso (Maxi, 1-ago). Decir "no la bajó"
         // era afirmar algo falso sobre una persona.
         const t = p?.user_id ? TOKENS[p.user_id] : null;
-        if (t) return `✅ le llegan — última vez ${desde(t.updated_at)}`;
+        if (t) return `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.6 4.4 4.4L19 7.4"/></svg> le llegan — última vez ${desde(t.updated_at)}`;
         if (p) return '<span class="falta">no le llegan avisos — falta el permiso de notificaciones</span>';
         return '<span class="falta">todavía no entró</span>';
-      })()}</dd>
-      <dt>Trabajos</dt><dd>${p ? `${p.completed_jobs || 0} hechos · ⭐ ${p.avg_rating ? Number(p.avg_rating).toFixed(1) : '—'}${p.anios_oficio ? ` · ${p.anios_oficio} años de oficio` : ''}` : '—'}</dd>
-      <dt>Radar</dt><dd>${(() => {
+      })()}</dd></div>
+      <div class="dato"><dt>Trabajos</dt><dd>${p ? `${p.completed_jobs || 0} hechos · <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.9 2.6 5.3 5.8.9-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 10l5.8-.9z"/></svg> ${p.avg_rating ? Number(p.avg_rating).toFixed(1) : '—'}${p.anios_oficio ? ` · ${p.anios_oficio} años de oficio` : ''}` : '—'}</dd></div>
+      <div class="dato"><dt>Radar</dt><dd>${(() => {
         if (!p) return '—';
         // Prendido y con ubicación son cosas distintas: sin ubicación el mapa no
         // lo puede poner en ningún lado, así que NO le llega ni un trabajo. Decir
         // "puede recibir trabajos" ahí sería mentira.
-        if (p.available && coords(p.location)) return '📡 prendido — puede recibir trabajos ahora';
+        if (p.available && coords(p.location)) return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="19" r="1.6"/><path d="M12 15.4a3.6 3.6 0 0 1 3.6 3.6"/><path d="M12 11.2a7.8 7.8 0 0 1 7.8 7.8"/><path d="M12 6.9a11.9 11.9 0 0 1 11.9 11.9"/></svg> prendido — puede recibir trabajos ahora';
         if (p.available) return '<span class="falta">prendido, pero sin ubicación — todavía no aparece en el mapa</span>';
         if (coords(p.location)) return 'apagado';
         return '<span class="falta">nunca lo prendió</span>';
-      })()}</dd>
-      ${faltan.length ? `<dt>Le falta</dt><dd class="falta">${faltan.join(', ')}</dd>` : ''}
+      })()}</dd></div>
+      ${faltan.length ? `<div class="dato ancho"><dt>Le falta</dt><dd class="falta">${faltan.join(', ')}</dd></div>` : ''}
     </dl>
 
     ${coords(p?.location) ? `<div class="mapa-mini" id="map-${id}"></div>`
@@ -827,12 +847,12 @@ function renderClientes(){
   $('listaClientes').innerHTML = lista.length ? lista.map(c => {
     const dirs = [...c.direcciones];
     const estrellas = c.estrellas != null
-      ? `<span class="chip">⭐ ${c.estrellas.toFixed(1)} (${c.calificaciones})</span>`
+      ? `<span class="chip"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.9 2.6 5.3 5.8.9-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 10l5.8-.9z"/></svg> ${c.estrellas.toFixed(1)} (${c.calificaciones})</span>`
       : '<span class="chip gris">sin calificar</span>';
     return `
     <div class="card">
       <div class="ctop">
-        <div class="av">🧑</div>
+        <div class="av"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M4.9 20.3a7.1 7.1 0 0 1 14.2 0"/></svg></div>
         <div style="min-width:0;flex:1">
           <div class="cnom">${dirs[0] ? esc(dirs[0]) : 'Cliente'}</div>
           <div class="csub">${c.pedidos} pedido${c.pedidos > 1 ? 's' : ''} · último ${desde(c.ultimo)}</div>
@@ -843,9 +863,9 @@ function renderClientes(){
         </div>
       </div>
       <dl class="datos">
-        <dt>Direcciones</dt><dd>${dirs.length ? dirs.map(esc).join('<br>') : '—'}</dd>
-        <dt>Estados</dt><dd>${Object.entries(c.estados).map(([k, v]) => `${k}: ${v}`).join(' · ')}</dd>
-        <dt>Identificador</dt><dd style="font-size:.7rem;color:var(--mut2)">${esc(c.id)}</dd>
+        <div class="dato ancho"><dt>Direcciones</dt><dd>${dirs.length ? dirs.map(esc).join('<br>') : '—'}</dd></div>
+        <div class="dato"><dt>Estados</dt><dd>${Object.entries(c.estados).map(([k, v]) => `${k}: ${v}`).join(' · ')}</dd></div>
+
       </dl>
     </div>`;
   }).join('') : '<div class="vacio">Todavía no hay clientes con pedidos.</div>';
@@ -858,7 +878,7 @@ function renderTrabajos(){
   $('listaTrabados').innerHTML = TRABADOS.length ? TRABADOS.map(t => `
     <div class="card" style="border-color:#6b5a1e">
       <div class="ctop">
-        <div class="av">⚠</div>
+        <div class="av"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4.6"/><circle cx="12" cy="17" r=".95" fill="currentColor" stroke="none"/><path d="M10.3 4.6 2.8 17.8a1.9 1.9 0 0 0 1.7 2.9h15a1.9 1.9 0 0 0 1.7-2.9L13.7 4.6a1.9 1.9 0 0 0-3.4 0z"/></svg></div>
         <div style="min-width:0;flex:1">
           <div class="cnom">${esc(t.motivo || 'Trabado')}</div>
           <div class="csub">${esc(t.detalle || '')} · ${desde(t.desde)}</div>
@@ -870,7 +890,7 @@ function renderTrabajos(){
         <button class="b" onclick="cerrarTrabado('${t.job_id}')">Darlo por terminado</button>
         <button class="b del" onclick="verTrabajo('${t.job_id}')">Ver detalle</button>
       </div>
-    </div>`).join('') : '<div class="vacio">Ningún trabajo trabado. 👌</div>';
+    </div>`).join('') : '<div class="vacio">Ningún trabajo trabado. <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11.2h2.6v9.2H7a1.4 1.4 0 0 1-1.4-1.4v-6.4A1.4 1.4 0 0 1 7 11.2z"/><path d="M9.6 11.2 13 4.1a2 2 0 0 1 3.8 1.2l-.7 4h3.6a1.9 1.9 0 0 1 1.9 2.3l-1.2 6a1.9 1.9 0 0 1-1.9 1.5H9.6"/></svg></div>';
 
   $('listaTrabajos').innerHTML = TRABAJOS.length ? TRABAJOS.slice(0, 24).map(j => {
     const prof = j.professionals ? `${j.professionals.first_name || ''} ${j.professionals.last_name || ''}`.trim() : null;
@@ -879,7 +899,7 @@ function renderTrabajos(){
     return `
     <div class="card">
       <div class="ctop">
-        <div class="av">🔧</div>
+        <div class="av"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="16.4" cy="7.6" r="1.2" fill="currentColor" stroke="none"/><path d="M20.4 10.9a5.2 5.2 0 1 0-7.3-7.3 5.2 5.2 0 0 0-1 5.6l-8.6 8.6v2.7h2.7l1.6-1.6v-1.9h1.9l1.6-1.6v-1.9h1.9l1.6-1.6a5.2 5.2 0 0 0 5.6-1z"/></svg></div>
         <div style="min-width:0;flex:1">
           <div class="cnom">${esc(j.professions?.name || 'Trabajo')}</div>
           <div class="csub">${esc(j.address || 'sin dirección')} · ${desde(j.created_at)}</div>
@@ -887,7 +907,7 @@ function renderTrabajos(){
         </div>
         <span class="est ${cl}">${ESTADOS[j.status] || j.status}</span>
       </div>
-      ${j.notes ? `<dl class="datos"><dt>Pedido</dt><dd>${esc(String(j.notes).slice(0, 220))}</dd></dl>` : ''}
+      ${j.notes ? `<dl class="datos"><div class="dato ancho"><dt>Pedido</dt><dd>${esc(String(j.notes).slice(0, 220))}</dd></div></dl>` : ''}
     </div>`;
   }).join('') : '<div class="vacio">No hay trabajos.</div>';
 }
@@ -900,7 +920,7 @@ function verTrabajo(id){
 // ── Mapas ────────────────────────────────────────────────────────────────
 // `location` puede llegar de tres formas y hay que entender las tres.
 //
-// 🔴 La que faltaba —y la que usa Supabase de verdad— es la tercera: una
+// <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.6v5"/><circle cx="12" cy="16.2" r=".95" fill="currentColor" stroke="none"/></svg> La que faltaba —y la que usa Supabase de verdad— es la tercera: una
 // columna PostGIS no viaja como texto legible sino como binario en hexa
 // ("0101000020E6100000DF50F86C1D1F4FC0..."). Como el valor no era vacío, la
 // tarjeta dibujaba el recuadro del mapa igual, pero sin coordenadas quedaba
@@ -973,7 +993,7 @@ async function pintarMetricas(){
     `).join('') || '<div class="vacio">Sin datos del embudo.</div>';
   } catch { $('embudo').innerHTML = '<div class="vacio">No se pudo cargar el embudo.</div>'; }
 
-  // ⚠️ Contaba sólo los LEADS, así que los profesionales sin ficha de registro
+  // <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4.6"/><circle cx="12" cy="17" r=".95" fill="currentColor" stroke="none"/><path d="M10.3 4.6 2.8 17.8a1.9 1.9 0 0 0 1.7 2.9h15a1.9 1.9 0 0 0 1.7-2.9L13.7 4.6a1.9 1.9 0 0 0-3.4 0z"/></svg> Contaba sólo los LEADS, así que los profesionales sin ficha de registro
   // —Maxi con Durlock, Leonardo con Fletes— no figuraban en ningún oficio
   // (Maxi, 1-ago: "no aparezco yo en durlock"). Ahora cuenta personas reales.
   //
@@ -1018,9 +1038,9 @@ function telefonoDe(p){
 // persona, no como una notificación del sistema: son gente que se anotó, no
 // usuarios que hay que "activar".
 const MENSAJES = {
-  oficio: (n) => `Hola ${n}! Soy Maxi de BOLT ⚡ Te tengo aprobado pero me falta un dato para que te lleguen los trabajos: ¿qué oficio hacés? Con eso te dejo listo.`,
-  radar:  (n) => `Hola ${n}! Soy Maxi de BOLT ⚡ Ya estás aprobado y listo para recibir trabajos. Sólo falta un paso: abrí la app y prendé el radar (el botón grande de la pantalla principal). Mientras esté apagado no te llega nada, aunque haya pedidos de tu oficio cerca.`,
-  avisos: (n) => `Hola ${n}! Soy Maxi de BOLT ⚡ Una cosita: la app no tiene permiso para mandarte notificaciones, así que no te vas a enterar cuando entre un trabajo. Entrá a la app y aceptá los avisos cuando te lo pida (o desde Ajustes del teléfono).`,
+  oficio: (n) => `Hola ${n}! Soy Maxi de BOLT <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 2.6 4.8 13.4h6L9.9 21.4l8.6-11h-6.2z"/></svg> Te tengo aprobado pero me falta un dato para que te lleguen los trabajos: ¿qué oficio hacés? Con eso te dejo listo.`,
+  radar:  (n) => `Hola ${n}! Soy Maxi de BOLT <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 2.6 4.8 13.4h6L9.9 21.4l8.6-11h-6.2z"/></svg> Ya estás aprobado y listo para recibir trabajos. Sólo falta un paso: abrí la app y prendé el radar (el botón grande de la pantalla principal). Mientras esté apagado no te llega nada, aunque haya pedidos de tu oficio cerca.`,
+  avisos: (n) => `Hola ${n}! Soy Maxi de BOLT <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 2.6 4.8 13.4h6L9.9 21.4l8.6-11h-6.2z"/></svg> Una cosita: la app no tiene permiso para mandarte notificaciones, así que no te vas a enterar cuando entre un trabajo. Entrá a la app y aceptá los avisos cuando te lo pida (o desde Ajustes del teléfono).`,
 };
 
 /** Abre WhatsApp con el mensaje según lo que le falta a esa persona. */
@@ -1034,7 +1054,7 @@ function avisar(tel, nombre, motivo){
 function wa(tel, nombre){
   const n = String(tel).replace(/\D/g, '');
   const full = n.startsWith('54') ? n : ('549' + n.slice(-10));
-  const msj = `Hola ${nombre}! Te escribo de BOLT ⚡`;
+  const msj = `Hola ${nombre}! Te escribo de BOLT <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 2.6 4.8 13.4h6L9.9 21.4l8.6-11h-6.2z"/></svg>`;
   window.open('https://wa.me/' + full + '?text=' + encodeURIComponent(msj), '_blank');
 }
 
@@ -1045,7 +1065,7 @@ async function aceptar(id){
   if (error) return aviso('No se pudo aceptar: ' + error.message, 'bad');
   // El mail sale de soporte@bolt.com.ar por Resend, NO del Gmail personal.
   const { error: e2 } = await sb.functions.invoke('notify-lead-accepted', { body: { leadId: id } });
-  aviso(e2 ? 'Aceptado, pero el mail no salió: ' + e2.message : 'Aceptado y avisado por mail ✅', e2 ? 'bad' : 'ok');
+  aviso(e2 ? 'Aceptado, pero el mail no salió: ' + e2.message : 'Aceptado y avisado por mail <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.6 4.4 4.4L19 7.4"/></svg>', e2 ? 'bad' : 'ok');
   await cargarLeads(); render(); pintarKpis();
 }
 
@@ -1056,7 +1076,7 @@ async function pedirDatos(id){
   if (!l.token){ aviso('Ese prestador no tiene link personal todavía.', 'bad'); return; }
   if (!confirm(`¿Mandarle a ${l.nombre} el mail pidiéndole los datos que faltan?\n\nSale de soporte@bolt.com.ar`)) return;
   const { error } = await sb.functions.invoke('notify-datos-pendientes', { body: { token: l.token } });
-  aviso(error ? 'No se pudo enviar: ' + error.message : 'Mail enviado desde soporte@bolt.com.ar ✅', error ? 'bad' : 'ok');
+  aviso(error ? 'No se pudo enviar: ' + error.message : 'Mail enviado desde soporte@bolt.com.ar <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.6 4.4 4.4L19 7.4"/></svg>', error ? 'bad' : 'ok');
 }
 
 async function verDocs(id){
@@ -1095,7 +1115,7 @@ async function preguntarAlTrabajador(jobId, userId, motivo){
   const m = MOTIVOS[motivo] || { pregunta: '¿Cómo viene ese trabajo? Contanos así lo destrabamos.' };
   try {
     await sb.functions.invoke('send-push', {
-      body: { userId, title: '⚡ BOLT te pregunta', body: m.pregunta, data: { jobId, screen: 'tracking' } } });
+      body: { userId, title: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 2.6 4.8 13.4h6L9.9 21.4l8.6-11h-6.2z"/></svg> BOLT te pregunta', body: m.pregunta, data: { jobId, screen: 'tracking' } } });
     aviso('Listo, le preguntamos. Si no contesta sigue apareciendo acá.');
   } catch (e) { aviso('No se pudo avisar: ' + e.message, 'bad'); }
 }
@@ -1115,7 +1135,7 @@ async function asignarOtro(jobId){
   if (data !== 'reasignado') return aviso(String(data), 'bad');
   const { data: nu } = await sb.from('professionals').select('user_id').eq('id', nuevo.id).single();
   if (nu?.user_id) sb.functions.invoke('send-push', { body: {
-    userId: nu.user_id, title: '⚡ Te asignamos un trabajo',
+    userId: nu.user_id, title: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 2.6 4.8 13.4h6L9.9 21.4l8.6-11h-6.2z"/></svg> Te asignamos un trabajo',
     body: 'Un trabajo pasó a vos. Abrilo en BOLT para ver los detalles.',
     data: { jobId, screen: 'tracking' } } }).catch(() => {});
   aviso(`Listo: ahora es de ${nuevo.nombre}`);
@@ -1146,7 +1166,7 @@ async function editar(id){
   if (!Object.keys(nuevo).length) return aviso('No cambiaste nada.');
   const { error } = await sb.from('prestador_leads').update(nuevo).eq('id', id);
   if (error) return aviso('No se pudo guardar: ' + error.message, 'bad');
-  aviso('Datos guardados ✅'); await cargarLeads(); render();
+  aviso('Datos guardados <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.6 4.4 4.4L19 7.4"/></svg>'); await cargarLeads(); render();
 }
 
 async function rechazar(id){
