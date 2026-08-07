@@ -542,3 +542,51 @@ img, .foto, .doc, .mapa-mini{
   box-shadow: var(--s-baja) !important;
   filter:none !important;
 }
+
+/* ── El ingreso, bien ────────────────────────────────────────────────────
+   🔴 #loginBox NO tiene una caja adentro: sus hijos directos son el logo, el
+   texto, los dos pasos del formulario y el cartel de error, sueltos. Apuntarle
+   a `.login > div` convirtió a CADA UNO en una caja de vidrio y quedaron cajas
+   anidadas. La caja de vidrio es el contenedor mismo. */
+.login{
+  position:fixed; inset:0; z-index:80;
+  display:grid; place-items:center; padding:24px;
+  background:transparent;
+}
+/* Se deshace lo anterior: los hijos no llevan nada. */
+.login > *, .login .caja, .login form, .login > div{
+  background:transparent !important;
+  backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+  box-shadow:none !important;
+  padding:0 !important;
+  max-width:none;
+  border-radius:0;
+}
+/* Y la caja es el contenedor. */
+#loginBox{
+  display:block !important;
+  width:min(92vw, 370px);
+  margin:auto;
+  padding:36px 32px !important;
+  border-radius: var(--r-grande);
+  background: color-mix(in srgb, var(--surf) 64%, transparent) !important;
+  backdrop-filter: blur(28px) saturate(1.35) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.35) !important;
+  box-shadow: 0 34px 84px -34px rgba(0,0,0,.96) !important;
+  text-align:center;
+}
+#loginBox .logo{ justify-content:center; margin-bottom:6px }
+#loginBox p{ color:var(--mut); font-size:.86rem; margin-bottom:20px }
+#loginBox input{
+  width:100%; margin-bottom:11px; text-align:center;
+  padding:13px 16px !important;
+  background: rgba(255,255,255,.06) !important;
+}
+#loginBox button{
+  width:100%;
+  background: var(--y) !important; color:#141210 !important;
+  box-shadow: var(--s-baja) !important;
+  padding:13px 16px !important;
+}
+#loginBox button:hover{ background: var(--y-soft) !important }
+#loginBox .err{ min-height:18px; margin-top:10px; color:var(--mut2); font-size:.8rem }
