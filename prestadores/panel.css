@@ -590,3 +590,11 @@ img, .foto, .doc, .mapa-mini{
 }
 #loginBox button:hover{ background: var(--y-soft) !important }
 #loginBox .err{ min-height:18px; margin-top:10px; color:var(--mut2); font-size:.8rem }
+
+/* La caja se estiraba de arriba a abajo: en la grilla del contenedor hay que
+   decirle explícitamente que se centre y mida lo que ocupa su contenido. */
+#loginBox{
+  align-self:center; justify-self:center;
+  height:fit-content !important; max-height:none;
+  margin:0 !important;
+}
