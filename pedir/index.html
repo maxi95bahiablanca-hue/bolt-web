@@ -1897,13 +1897,23 @@ function pintarPasos(estado){
   // según lo avanzado que esté, pero el botón está siempre.
   $('btnCancelar').style.display = ['accepted', 'arrived', 'in_progress'].includes(estado) ? 'block' : 'none';
   $('btnCancelar').textContent = estado === 'accepted' ? 'Cancelar pedido' : 'Cancelar / cerrar pedido';
-  // Sin turno acordado, el chat es lo único que destraba: se lo decimos.
-  const faltaTurno = estado === 'accepted' && !(S.job || {}).scheduled_for;
-  $('cajaObra').style.display = faltaTurno ? 'block' : $('cajaObra').style.display;
-  if (faltaTurno){
-    $('cajaObra').innerHTML = '<div class="obra"><h5>🤝 FALTA ACORDAR CUÁNDO VIENE</h5>' +
-      '<div class="det">Escribile por el chat para arreglar el día y la hora que te queden bien.</div>' +
-      '<button class="mini" style="width:100%;margin-top:10px" onclick="preguntarCuando()">Preguntarle cuándo puede venir</button></div>';
+  // 🔴 9-ago-2026 — acá había un cartel "FALTA ACORDAR CUÁNDO VIENE" con un
+  //    botón "Preguntarle cuándo puede venir". Voló: el chat ya arranca con el
+  //    profesional preguntando exactamente eso ("¿qué día y a qué hora te queda
+  //    bien?"), así que el cartel le pedía al cliente que hiciera una pregunta
+  //    que ya tenía contestada arriba, con el mensaje al lado (Maxi).
+  //
+  //    Lo que sí hace falta decir es lo otro: cuando el profesional SALIÓ, que
+  //    le pida el código antes de abrirle la puerta. Eso es seguridad, no
+  //    coordinación.
+  const enCamino = estado === 'accepted' && !!(S.job || {}).on_the_way_at;
+  // Si es una obra de varios días, `pintarObra()` ya usa esta caja: no se pisa.
+  if (enCamino && !(S.job || {}).is_multiday){
+    const nom = ((S.job.professionals || {}).first_name || 'el profesional');
+    $('cajaObra').style.display = 'block';
+    $('cajaObra').innerHTML = '<div class="obra"><h5>🚗 ' + esc(nom.toUpperCase()) + ' VA EN CAMINO</h5>' +
+      '<div class="det"><b>No le abras la puerta sin pedirle el código.</b> Tiene un número de 4 cifras ' +
+      'en su pantalla; cuando llegue te lo vamos a pedir acá para que lo compares. Si no coincide, no es de BOLT.</div></div>';
   }
   const hayCodigo = estado === 'arrived' && S.job && S.job.verification_code && !S.codigoOk;
   $('cajaCodigo').style.display = hayCodigo ? 'block' : 'none';
@@ -1943,12 +1953,6 @@ async function cerrarJornada(){
     avisarAlProfesional('Jornada cerrada', (S.nombre || 'El cliente') + ' confirmó que terminaste por hoy.');
     pintarObra();
   } else alert(data);
-}
-
-/** Un toque y el mensaje sale escrito: acordar el turno no puede depender de
- *  que el cliente sepa qué escribir. */
-function preguntarCuando(){
-  enviarMsg('Hola! ¿Qué día y a qué hora te queda bien venir?');
 }
 
 function verificarCodigo(){
