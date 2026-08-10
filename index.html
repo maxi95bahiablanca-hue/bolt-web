@@ -89,7 +89,11 @@
     --lin2:rgba(255,255,255,.16);
     --nav:74px;
   }
-  html{scroll-behavior:smooth}
+  /* El overflow-x tiene que estar TAMBIÉN en html, no sólo en body: con el
+     body solo, el navegador móvil ya agrandó el viewport antes de recortar, y
+     entonces achica la página entera para que entre (medido: pantalla de 360 y
+     viewport de 386). Eso corría la barra fija fuera de lo visible. */
+  html{scroll-behavior:smooth;overflow-x:hidden}
   body{
     font-family:"Inter",-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
     /* cv05 = ele con cola, ss03 = comillas rectas: dos cosas que Inter trae */
@@ -302,7 +306,13 @@
   .manifiesto span.tenue{color:#3A3F44}
   .manifiesto.ok span.tenue{color:var(--tx2)}
 
-  /* El halo que gira, atrás del manifiesto */
+  /* El halo que gira, atrás del manifiesto.
+     🔴 10-ago-2026 — mide 1100 px y va centrado con margin -550. En un celular
+     de 360 px se salía 370 px por lado y empujaba el ancho del documento a 954:
+     Chrome Android entonces agranda el viewport y ACHICA toda la página, y así
+     la barra de arriba quedaba más ancha que la pantalla y el botón "Pedir
+     ahora" caía fuera de lo visible. La sección tiene que recortarlo. */
+  #como{position:relative;overflow:hidden}
   .halo{
     position:absolute;top:50%;left:50%;width:1100px;height:1100px;
     margin:-550px 0 0 -550px;pointer-events:none;z-index:-1;
