@@ -1192,7 +1192,7 @@ function usarDirGuardada(){
   const d = S.dirGuardada; if (!d) return;
   S.lat = d.lat; S.lng = d.lng; S.direccion = d.direccion;
   $('txtDir').value = d.direccion;
-  ir(4); pintarResumen();
+  seguirTrasUbicacion();
 }
 
 function usarGPS(){
@@ -1209,16 +1209,35 @@ function usarGPS(){
       if (calle) $('txtDir').value = calle + (a.city || a.town ? ', ' + (a.city || a.town) : '');
     } catch (e) {}
     S.direccion = $('txtDir').value;
-    ir(4); pintarResumen();
+    seguirTrasUbicacion();
   }, () => {
     $('errUbic').textContent = 'No pudimos tomar tu ubicación. Escribí la dirección abajo.';
   }, { enableHighAccuracy: true, timeout: 8000 });
 }
 
+/** Después de la ubicación.
+ *
+ *  🔴 9-ago-2026 — la pantalla "¿Cómo te contactamos?" aparecía SIEMPRE, aunque
+ *  el nombre y el WhatsApp ya estuvieran guardados en la cuenta desde el pedido
+ *  anterior. El cliente terminaba de contarle el problema al asistente y lo
+ *  último que veía era un formulario pidiéndole lo que ya había puesto (Maxi:
+ *  "me hace escribirlo después de responder las preguntas del asistente, sólo
+ *  debería guardar la información").
+ *
+ *  Ahora, si ya están, no se pregunta nada: se busca directo.
+ */
+function seguirTrasUbicacion(){
+  pintarResumen();
+  ir(4);
+  const nom = ($('txtNombre').value || '').trim();
+  const tel = ($('txtTel').value || '').replace(/\D/g, '');
+  if (nom.length >= 2 && tel.length >= 8 && S.profesionId) pedir();
+}
+
 async function confirmarUbic(){
   const dir = $('txtDir').value.trim();
   $('errUbic').textContent = '';
-  if (S.lat && S.lng){ S.direccion = dir || S.direccion; ir(4); pintarResumen(); return; }
+  if (S.lat && S.lng){ S.direccion = dir || S.direccion; seguirTrasUbicacion(); return; }
   if (dir.length < 5){ $('errUbic').textContent = 'Escribí la calle y la altura.'; return; }
   // Geocodificado acotado a Bahía Blanca, como en el otro proyecto: una
   // dirección sin altura cae en cualquier lado si no se limita.
@@ -1228,7 +1247,7 @@ async function confirmarUbic(){
     const j = await r.json();
     if (!j.length){ $('errUbic').textContent = 'No encontramos esa dirección. Probá con calle y número.'; return; }
     S.lat = Number(j[0].lat); S.lng = Number(j[0].lon); S.direccion = dir;
-    ir(4); pintarResumen();
+    seguirTrasUbicacion();
   } catch (e) {
     $('errUbic').textContent = 'No pudimos ubicar la dirección. Probá de nuevo.';
   }
