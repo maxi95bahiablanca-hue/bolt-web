@@ -41,10 +41,10 @@ const FICHAS = [
     resumen: 'La cuenta rápida para no comprar de más ni quedarte a mitad de camino.',
     sintomas: '',
     causas: '',
-    hacer: 'Metros de pared = (largo de cada pared × altura), sumadas todas, menos puertas y ventanas. Un látex interior rinde entre 8 y 10 m² por litro POR MANO. Y siempre van dos manos: dividí los metros por 9, multiplicá por 2, y sumá un 10% por las que se pierden.',
-    ojo: 'Sobre pared nueva o muy manchada, la primera mano chupa casi el doble. Y si cambiás de color fuerte a claro, calculá tres manos.',
-    costo: 'Un dormitorio de 3×3 con 2,60 de alto son unos 30 m²: entre 7 y 8 litros para las dos manos.',
-    marcas: 'El látex económico rinde menos y termina saliendo igual o más caro: conviene mirar el rendimiento por litro que dice el tarro, no sólo el precio.'
+    hacer: 'Metros de pared = (largo de cada pared × altura), sumadas todas, menos puertas y ventanas. Después: dividí los metros por 5 y multiplicá por las manos que vayas a dar. Para dos manos es lo mismo que multiplicar los metros por 0,4.',
+    ojo: 'El tarro dice que rinde 10 o 12 m² por litro. Ese número sale del laboratorio: película fina, rodillo nuevo y pared sellada. En una casa de verdad el rodillo carga de más, la pared tiene textura, la primera mano chupa y siempre queda pintura en la bandeja y en el fondo del tarro. El rendimiento de obra es la mitad del que dice el envase, y ese es el que hay que usar para ir a comprar. Si además cambiás de un color fuerte a uno claro, calculá tres manos.',
+    costo: 'Un dormitorio de 3×3 con 2,60 de alto tiene unos 28 m² de pared: 11 litros para las dos manos, o 14 si también va el techo. Un balde de 20 L no alcanza para las paredes y el techo juntos.',
+    marcas: 'El látex económico rinde menos todavía y termina saliendo igual o más caro. Y si querés el número fino en vez de la cuenta de bolsillo, la calculadora de materiales de BOLT te lo da con las medidas de tu ambiente.'
   },
   {
     oficio: 'Pintor', foto: 'pintor-sin-gente-2',
