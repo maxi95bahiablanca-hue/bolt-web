@@ -24,12 +24,20 @@
 
 const R = {
   // ── Pintura ──────────────────────────────────────────────────────────────
-  // Rendimientos de ficha técnica (Alba, Sherwin Williams, Tersuave coinciden
-  // dentro del 10%). Se toma el valor conservador de cada rango.
-  latexInterior:  11,   // m² por litro y por mano  (ficha: 10–12)
-  latexExterior:   9,   // m² por litro y por mano  (ficha:  8–10)
-  fijador:         9,   // m² por litro             (ficha:  8–10)
-  esmalte:        13,   // m² por litro y por mano  (ficha: 12–14)
+  // 🔴 10-ago-2026 — acá estaban los rendimientos de FICHA TÉCNICA (10–12 m²/L
+  // por mano) y daban la mitad del material que se usa de verdad. Lo marcó un
+  // pintor: con esos números te quedás a mitad del ambiente.
+  //
+  // La ficha se mide en laboratorio, con película fina, rodillo nuevo y pared
+  // sellada. En una casa real el rodillo carga de más, la pared tiene textura,
+  // la primera mano chupa, y siempre queda pintura en la bandeja y el tarro.
+  // El rendimiento de obra es la mitad del de ficha, y esa es la cuenta que
+  // sirve para ir a comprar. Contraste: un balde de 20 L hace un ambiente de
+  // 40 m² a dos manos → 4 m²/L por mano. Estos números dan justo eso.
+  latexInterior:  5.5,  // m² por litro y por mano  (ficha: 10–12, obra: 5–6)
+  latexExterior:  4.5,  // m² por litro y por mano  (ficha:  8–10, obra: 4–5)
+  fijador:         9,   // m² por litro — este SÍ va diluido 1:1, rinde lo que dice
+  esmalte:        6.5,  // m² por litro y por mano  (ficha: 12–14, obra: 6–7)
   // 🔴 10-ago-2026 — acá había un solo número por m² y una pregunta de sí o no
   // ("¿tenés grietas?") que multiplicaba 2,5 kg por CADA m² del ambiente. Un
   // dormitorio daba 143 kg de enduido: seis baldes, con eso se plancha un
@@ -100,6 +108,36 @@ function paredes(largo, ancho, alto, puertas, ventanas) {
   return Math.max(0, bruta - (puertas * R.puertaM2) - (ventanas * R.ventanaM2));
 }
 
+/** Los cuatro estados en los que puede estar una pared antes de pintarla.
+ *
+ *  Cada uno es un trabajo distinto, no el mismo trabajo con más material. La
+ *  pared pintada y sana NO lleva enduido ni fijador: se lava, se lija apenas y
+ *  se pinta. Poner igual una partida de 50 kg es mandar a alguien a comprar
+ *  dos baldes que va a devolver.
+ *
+ *  Lo usan las dos calculadoras de interior (por ambiente y por pared), así
+ *  que vive acá: si cambia el criterio, cambia en las dos a la vez. */
+const ESTADO_PARED = {
+  pintada:   { porM2: 0,                   minimo: 1, fijador: false, techo: false,
+               etiqueta: 'Pintada y lisa',
+               detalle: 'para tapar algún agujero suelto' },
+  marcas:    { porM2: R.enduidoMarcas,     minimo: 2, fijador: false, techo: false,
+               etiqueta: 'Pintada, con marcas y agujeros',
+               detalle: 'sólo en las marcas y los agujeros de clavos' },
+  emparejar: { porM2: R.enduidoEmparejar,  minimo: 4, fijador: true,  techo: true,
+               etiqueta: 'Hay que emparejarla entera',
+               detalle: 'dos manos sobre toda la superficie' },
+  nueva:     { porM2: R.enduidoPlanchado,  minimo: 6, fijador: true,  techo: true,
+               etiqueta: 'Revoque a la vista o pared nueva',
+               detalle: 'planchado completo sobre el revoque' },
+};
+
+/** La nota de cierre, según si el trabajo es repintar o rehacer. */
+const NOTA_PARED = (estado) =>
+  (estado === 'pintada' || estado === 'marcas')
+    ? 'Si aparece una grieta, se abre en V, se rellena y se enduye ahí nomás. La grieta que vuelve al año no es pintura: es movimiento, y eso lo mira un albañil.'
+    : 'Si cambiás de un color oscuro a uno claro, contá una mano más.';
+
 /* ───────────────────────────────────────────────────────────────────────────
    LAS CALCULADORAS
    Cada una devuelve { partidas, supuestos, nota }.
@@ -134,21 +172,7 @@ const CALCULADORAS = [
       const sup      = supAred + supTecho;
       const litros   = sup * v.manos / R.latexInterior;
 
-      // Cada estado de pared es un trabajo distinto, no el mismo trabajo con
-      // más material. La pared pintada y sana NO lleva enduido ni fijador: se
-      // lava, se lija apenas y se pinta. Poner igual una partida de 50 kg es
-      // mandar a alguien a comprar dos baldes que va a devolver.
-      const TRABAJO = {
-        pintada:   { porM2: 0,                   minimo: 1, fijador: false, techo: false,
-                     detalle: 'para tapar algún agujero suelto' },
-        marcas:    { porM2: R.enduidoMarcas,     minimo: 2, fijador: false, techo: false,
-                     detalle: 'sólo en las marcas y los agujeros de clavos' },
-        emparejar: { porM2: R.enduidoEmparejar,  minimo: 4, fijador: true,  techo: true,
-                     detalle: 'dos manos sobre toda la superficie' },
-        nueva:     { porM2: R.enduidoPlanchado,  minimo: 6, fijador: true,  techo: true,
-                     detalle: 'planchado completo sobre el revoque' },
-      };
-      const t = TRABAJO[v.estado] || TRABAJO.pintada;
+      const t = ESTADO_PARED[v.estado] || ESTADO_PARED.pintada;
 
       // El enduido va sobre las paredes. El techo entra sólo cuando hay que
       // emparejar de verdad: nadie plancha un techo para repintarlo.
@@ -159,7 +183,7 @@ const CALCULADORAS = [
 
       const partidas = [
         { item: 'Látex interior', cantidad: ceil(litros), unidad: 'litros',
-          detalle: `${v.manos} ${v.manos === 1 ? 'mano' : 'manos'} · rinde ${R.latexInterior} m²/L` },
+          detalle: `${v.manos} ${v.manos === 1 ? 'mano' : 'manos'} · rinde ${R.latexInterior} m²/L en obra` },
       ];
       if (t.fijador) {
         partidas.push({ item: 'Fijador al agua', cantidad: ceil(sup / R.fijador), unidad: 'litros',
@@ -176,7 +200,7 @@ const CALCULADORAS = [
       const supuestos = [
         `Ambiente de ${v.largo} × ${v.ancho} m con ${v.alto} m de altura`,
         `${supAred.toFixed(1)} m² de pared${v.techo ? ` + ${supTecho.toFixed(1)} m² de techo` : ''} (ya descontadas ${v.puertas} puerta/s y ${v.ventanas} ventana/s)`,
-        'Látex al agua de calidad media, en interior',
+        'Látex al agua de calidad media, con rendimiento de obra (no el de la ficha)',
       ];
       if (!t.fijador) {
         supuestos.push('Sobre pintura vieja sana: no lleva fijador ni enduido general');
@@ -188,9 +212,70 @@ const CALCULADORAS = [
         superficie: sup,
         partidas,
         supuestos,
+        nota: NOTA_PARED(v.estado),
+      };
+    },
+  },
+
+  {
+    id: 'pintura-pared-interior',
+    oficio: 'Pintor',
+    titulo: 'Pintar una sola pared por dentro',
+    subtitulo: 'Una pared, sin el resto del ambiente',
+    campos: [
+      { k: 'largo',     label: 'Largo de la pared',  unidad: 'm', def: 4,   paso: 0.1 },
+      { k: 'alto',      label: 'Altura',             unidad: 'm', def: 2.6, paso: 0.1 },
+      { k: 'puertas',   label: 'Puertas en esa pared',  unidad: '', def: 0, paso: 1 },
+      { k: 'ventanas',  label: 'Ventanas en esa pared', unidad: '', def: 1, paso: 1 },
+      { k: 'manos',     label: 'Manos de pintura',   unidad: '',  def: 2,   paso: 1, min: 1, max: 3 },
+      { k: 'estado',    label: 'Cómo está la pared hoy', tipo: 'opciones', def: 'pintada',
+        opciones: [
+          { v: 'pintada',   t: 'Pintada y lisa' },
+          { v: 'marcas',    t: 'Pintada, con marcas y agujeros' },
+          { v: 'emparejar', t: 'Hay que emparejarla entera' },
+          { v: 'nueva',     t: 'Revoque a la vista o pared nueva' },
+        ] },
+    ],
+    calcular(v) {
+      // Una pared sola: la pared de acento, la que quedó manchada, la que da
+      // al patio. Es el caso más común y no entraba en la de ambiente, que
+      // obliga a cargar los cuatro lados.
+      const sup = Math.max(0, v.largo * v.alto - v.puertas * R.puertaM2 - v.ventanas * R.ventanaM2);
+      const t = ESTADO_PARED[v.estado] || ESTADO_PARED.pintada;
+      const end = Math.max(t.minimo, sup * t.porM2);
+
+      const partidas = [
+        { item: 'Látex interior', cantidad: ceil(sup * v.manos / R.latexInterior), unidad: 'litros',
+          detalle: `${v.manos} ${v.manos === 1 ? 'mano' : 'manos'} · rinde ${R.latexInterior} m²/L en obra` },
+      ];
+      if (t.fijador) {
+        partidas.push({ item: 'Fijador al agua', cantidad: ceil(sup / R.fijador), unidad: 'litros',
+          detalle: 'una mano, para que el látex agarre' });
+      }
+      partidas.push(
+        { item: 'Enduido plástico', cantidad: ceil(end), unidad: 'kg', detalle: t.detalle },
+        { item: 'Lija al agua (grano 120)', cantidad: t.porM2 > 0 ? ceil(sup / 12) : 1, unidad: 'pliegos' },
+        { item: 'Cinta de papel', cantidad: 1, unidad: 'rollo de 45 m',
+          detalle: 'para el zócalo, el techo y las paredes de al lado' },
+        { item: 'Rodillo de lana + bandeja', cantidad: 1, unidad: 'juego' },
+      );
+
+      const supuestos = [
+        `Una pared de ${v.largo} × ${v.alto} m = ${sup.toFixed(1)} m² netos`,
+        v.puertas || v.ventanas
+          ? `Ya descontadas ${v.puertas} puerta/s y ${v.ventanas} ventana/s`
+          : 'Sin puertas ni ventanas en esa pared',
+        'Rendimiento de obra, no de ficha técnica',
+      ];
+      if (!t.fijador) supuestos.push('Sobre pintura vieja sana: no lleva fijador ni enduido general');
+
+      return {
+        superficie: sup,
+        partidas,
+        supuestos,
         nota: v.estado === 'pintada' || v.estado === 'marcas'
-          ? 'Si aparece una grieta, se abre en V, se rellena y se enduye ahí nomás. La grieta que vuelve al año no es pintura: es movimiento, y eso lo mira un albañil.'
-          : 'Si cambiás de un color oscuro a uno claro, contá una mano más.',
+          ? 'Si es una pared de acento en un color fuerte, contá tres manos: los rojos y los azules tapan mal.'
+          : NOTA_PARED(v.estado),
       };
     },
   },
@@ -212,7 +297,7 @@ const CALCULADORAS = [
         superficie: sup,
         partidas: [
           { item: 'Látex para exterior', cantidad: ceil(sup * v.manos / R.latexExterior), unidad: 'litros',
-            detalle: `${v.manos} manos · rinde ${R.latexExterior} m²/L` },
+            detalle: `${v.manos} manos · rinde ${R.latexExterior} m²/L en obra` },
           { item: 'Fijador para exterior', cantidad: ceil(sup / R.fijador), unidad: 'litros' },
           { item: 'Sellador de grietas', cantidad: ceil(sup / 25), unidad: 'cartuchos',
             detalle: 'para fisuras finas antes de pintar' },
