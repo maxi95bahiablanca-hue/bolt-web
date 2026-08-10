@@ -87,21 +87,30 @@
   .calc-top h2{font-size:clamp(1.9rem,4.5vw,2.8rem);margin-bottom:8px}
   .calc-top p{color:var(--tx2)}
 
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start}
-  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  /* minmax(0,1fr) y no 1fr: un item de grid arranca con min-width:auto, así que
+     no baja de su min-content. El input de números trae 272 px de ancho propio
+     y empujaba la caja a 424 px — en un celular de 390 la página se salía 56 px
+     hacia la derecha. Medido en Chromium, 10-ago-2026. */
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;align-items:start}
+  @media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
 
-  .caja{background:var(--surf);border:1px solid var(--bord);border-radius:22px;padding:26px}
+  .caja{background:var(--surf);border:1px solid var(--bord);border-radius:22px;padding:26px;min-width:0}
   .caja h3{font-size:.76rem;letter-spacing:.18em;text-transform:uppercase;color:var(--tx3);
     font-weight:600;margin-bottom:22px}
 
-  .campo{margin-bottom:20px}
+  /* La barra de arriba es fija y mide 80 px: sin este margen, cuando el
+     navegador scrollea solo para mostrar el campo que tocaste, te lo deja
+     justo abajo de la barra y parece que no pasó nada. */
+  .campo{margin-bottom:20px;scroll-margin-top:96px}
   .campo label{display:block;font-size:.95rem;color:var(--tx2);margin-bottom:9px}
   .num{display:flex;align-items:center;gap:0;border:1px solid var(--bord);border-radius:999px;
     overflow:hidden;background:rgba(0,0,0,.25)}
   .num button{width:48px;height:52px;border:0;background:transparent;color:var(--tx2);
     font-size:1.3rem;cursor:pointer;font-family:inherit;transition:background .2s,color .2s}
   .num button:hover{background:var(--surf2);color:var(--tx)}
-  .num input{flex:1;border:0;background:transparent;color:var(--tx);font-family:inherit;
+  /* width:0 además de flex:1 — con min-width:0 solo, el ancho intrínseco del
+     input[type=number] sigue contando para el min-content del contenedor. */
+  .num input{flex:1;width:0;border:0;background:transparent;color:var(--tx);font-family:inherit;
     font-size:1.25rem;font-weight:600;text-align:center;min-width:0;outline:none;
     -moz-appearance:textfield}
   .num input::-webkit-outer-spin-button,.num input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}

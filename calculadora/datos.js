@@ -30,17 +30,34 @@ const R = {
   latexExterior:   9,   // m² por litro y por mano  (ficha:  8–10)
   fijador:         9,   // m² por litro             (ficha:  8–10)
   esmalte:        13,   // m² por litro y por mano  (ficha: 12–14)
-  enduido:       1.2,   // kg por m² para emparejar una pared en buen estado
-  enduidoRoto:   2.5,   // kg por m² si hay que rellenar grietas y agujeros
+  // 🔴 10-ago-2026 — acá había un solo número por m² y una pregunta de sí o no
+  // ("¿tenés grietas?") que multiplicaba 2,5 kg por CADA m² del ambiente. Un
+  // dormitorio daba 143 kg de enduido: seis baldes, con eso se plancha un
+  // departamento entero. El error no era el coeficiente, era suponer que el
+  // enduido es proporcional a la superficie SIEMPRE. Tapar agujeros de clavo
+  // es un pote; enduir la pared entera es otra cosa y es otra pregunta.
+  // Ficha técnica (Alba, Sinteplast, Tersuave coinciden): 1 kg rinde 1,5 a
+  // 2 m² POR MANO. Emparejar son dos manos → 1,1–1,3 kg/m².
+  enduidoEmparejar: 1.2,   // kg por m², dos manos sobre toda la pared
+  enduidoPlanchado: 2.0,   // kg por m², sobre revoque a la vista (tres manos)
+  enduidoMarcas:    0.1,   // kg por m², sólo para tapar marcas y agujeros
 
   // ── Albañilería ──────────────────────────────────────────────────────────
   ladrilloHueco18: 16.5,  // unidades por m² de pared (18×18×33)
   ladrilloComun:     58,  // unidades por m² de muro de 15 (5×12×25)
-  mezclaAsiento:  0.03,   // m³ por m² de pared
-  // Revoque grueso 2 cm, dosificación 1:3 cemento-arena con cal:
-  cementoGrueso:     4,   // kg por m²
-  calGrueso:         8,   // kg por m²
-  arenaGrueso:   0.025,   // m³ por m²
+  mezclaAsiento:  0.03,   // m³ de mortero por m² de pared
+  // Por m³ de mortero de asiento 1:1:6 (tablas de cómputo de obra).
+  // 🔴 10-ago-2026 — estaban puestos 300 y 200 kg/m³ a ojo, sueltos adentro
+  // de la fórmula. Se sobrecomprava ~40% de cemento y ~70% de cal.
+  cementoPorM3:    210,   // kg de cemento por m³ de mortero 1:1:6
+  calPorM3:        120,   // kg de cal hidratada por m³ de mortero 1:1:6
+  // Revoque grueso de 2 cm, dosificación 1:1:5 (cemento, cal, arena).
+  // 🔴 10-ago-2026 — la cal estaba en 8 kg/m², casi el triple de lo que va.
+  // La cuenta: 2 cm de espesor son 0,02 m³ de mortero por m², y un m³ de
+  // mortero 1:1:5 lleva ~230 kg de cemento y ~150 kg de cal hidratada.
+  cementoGrueso:   4.5,   // kg por m²  (0,02 m³ × 230 kg/m³)
+  calGrueso:       3.0,   // kg por m²  (0,02 m³ × 150 kg/m³)
+  arenaGrueso:   0.025,   // m³ por m²  (0,021 de mortero + desperdicio)
   finoPorM2:         3,   // kg de revoque fino listo por m²
   contrapiso:      0.1,   // m³ por m² (espesor 10 cm)
   carpeta:        0.025,  // m³ por m² (espesor 2,5 cm)
@@ -103,10 +120,12 @@ const CALCULADORAS = [
       { k: 'ventanas', label: 'Ventanas',            unidad: '',  def: 1,  paso: 1 },
       { k: 'manos',    label: 'Manos de pintura',    unidad: '',  def: 2,  paso: 1, min: 1, max: 3 },
       { k: 'techo',    label: '¿Pintás el techo?',   tipo: 'si-no', def: 1 },
-      { k: 'estado',   label: 'Cómo están las paredes', tipo: 'opciones', def: 'bien',
+      { k: 'estado',   label: 'Cómo están las paredes hoy', tipo: 'opciones', def: 'pintada',
         opciones: [
-          { v: 'bien',  t: 'Sanas, sólo emparejar' },
-          { v: 'roto',  t: 'Con grietas o agujeros' },
+          { v: 'pintada',   t: 'Pintadas y lisas' },
+          { v: 'marcas',    t: 'Pintadas, con marcas y agujeros' },
+          { v: 'emparejar', t: 'Hay que emparejarlas enteras' },
+          { v: 'nueva',     t: 'Revoque a la vista o pared nueva' },
         ] },
     ],
     calcular(v) {
@@ -114,29 +133,64 @@ const CALCULADORAS = [
       const supTecho = v.techo ? v.largo * v.ancho : 0;
       const sup      = supAred + supTecho;
       const litros   = sup * v.manos / R.latexInterior;
-      const fij      = sup / R.fijador;
-      const end      = sup * (v.estado === 'roto' ? R.enduidoRoto : R.enduido);
+
+      // Cada estado de pared es un trabajo distinto, no el mismo trabajo con
+      // más material. La pared pintada y sana NO lleva enduido ni fijador: se
+      // lava, se lija apenas y se pinta. Poner igual una partida de 50 kg es
+      // mandar a alguien a comprar dos baldes que va a devolver.
+      const TRABAJO = {
+        pintada:   { porM2: 0,                   minimo: 1, fijador: false, techo: false,
+                     detalle: 'para tapar algún agujero suelto' },
+        marcas:    { porM2: R.enduidoMarcas,     minimo: 2, fijador: false, techo: false,
+                     detalle: 'sólo en las marcas y los agujeros de clavos' },
+        emparejar: { porM2: R.enduidoEmparejar,  minimo: 4, fijador: true,  techo: true,
+                     detalle: 'dos manos sobre toda la superficie' },
+        nueva:     { porM2: R.enduidoPlanchado,  minimo: 6, fijador: true,  techo: true,
+                     detalle: 'planchado completo sobre el revoque' },
+      };
+      const t = TRABAJO[v.estado] || TRABAJO.pintada;
+
+      // El enduido va sobre las paredes. El techo entra sólo cuando hay que
+      // emparejar de verdad: nadie plancha un techo para repintarlo.
+      const supEnduido = supAred + (t.techo ? supTecho : 0);
+      const end = Math.max(t.minimo, supEnduido * t.porM2);
+      // Se lija lo que se enduye, no todo el ambiente.
+      const lija = t.porM2 > 0 ? ceil(supEnduido / 12) : 1;
+
+      const partidas = [
+        { item: 'Látex interior', cantidad: ceil(litros), unidad: 'litros',
+          detalle: `${v.manos} ${v.manos === 1 ? 'mano' : 'manos'} · rinde ${R.latexInterior} m²/L` },
+      ];
+      if (t.fijador) {
+        partidas.push({ item: 'Fijador al agua', cantidad: ceil(sup / R.fijador), unidad: 'litros',
+          detalle: 'una mano, para que el látex agarre' });
+      }
+      partidas.push(
+        { item: 'Enduido plástico', cantidad: ceil(end), unidad: 'kg', detalle: t.detalle },
+        { item: 'Lija al agua (grano 120)', cantidad: lija, unidad: 'pliegos' },
+        { item: 'Cinta de papel', cantidad: ceil((v.puertas + v.ventanas) * 6 / 45) || 1, unidad: 'rollos de 45 m' },
+        { item: 'Rodillo de lana + bandeja', cantidad: 1, unidad: 'juego' },
+        { item: 'Pincel para bordes', cantidad: 1, unidad: 'unidad' },
+      );
+
+      const supuestos = [
+        `Ambiente de ${v.largo} × ${v.ancho} m con ${v.alto} m de altura`,
+        `${supAred.toFixed(1)} m² de pared${v.techo ? ` + ${supTecho.toFixed(1)} m² de techo` : ''} (ya descontadas ${v.puertas} puerta/s y ${v.ventanas} ventana/s)`,
+        'Látex al agua de calidad media, en interior',
+      ];
+      if (!t.fijador) {
+        supuestos.push('Sobre pintura vieja sana: no lleva fijador ni enduido general');
+      } else if (t.techo && v.techo) {
+        supuestos.push('El enduido incluye el techo porque hay que emparejarlo');
+      }
 
       return {
         superficie: sup,
-        partidas: [
-          { item: 'Látex interior', cantidad: ceil(litros), unidad: 'litros',
-            detalle: `${v.manos} ${v.manos === 1 ? 'mano' : 'manos'} · rinde ${R.latexInterior} m²/L` },
-          { item: 'Fijador al agua', cantidad: ceil(fij), unidad: 'litros',
-            detalle: 'una mano sobre pared nueva o muy gastada' },
-          { item: 'Enduido plástico', cantidad: ceil(end), unidad: 'kg',
-            detalle: v.estado === 'roto' ? 'para rellenar grietas y agujeros' : 'para emparejar' },
-          { item: 'Lija al agua (grano 120)', cantidad: ceil(sup / 12), unidad: 'pliegos' },
-          { item: 'Cinta de papel', cantidad: ceil((v.puertas + v.ventanas) * 6 / 45) || 1, unidad: 'rollos de 45 m' },
-          { item: 'Rodillo de lana + bandeja', cantidad: 1, unidad: 'juego' },
-          { item: 'Pincel para bordes', cantidad: 1, unidad: 'unidad' },
-        ],
-        supuestos: [
-          `Ambiente de ${v.largo} × ${v.ancho} m con ${v.alto} m de altura`,
-          `${supAred.toFixed(1)} m² de pared${v.techo ? ` + ${supTecho.toFixed(1)} m² de techo` : ''} (ya descontadas ${v.puertas} puerta/s y ${v.ventanas} ventana/s)`,
-          'Látex al agua de calidad media, en interior',
-        ],
-        nota: 'Si cambiás de un color oscuro a uno claro, contá una mano más.',
+        partidas,
+        supuestos,
+        nota: v.estado === 'pintada' || v.estado === 'marcas'
+          ? 'Si aparece una grieta, se abre en V, se rellena y se enduye ahí nomás. La grieta que vuelve al año no es pintura: es movimiento, y eso lo mira un albañil.'
+          : 'Si cambiás de un color oscuro a uno claro, contá una mano más.',
       };
     },
   },
@@ -198,9 +252,9 @@ const CALCULADORAS = [
           { item: v.tipo === 'hueco' ? 'Ladrillo hueco 18×18×33' : 'Ladrillo común',
             cantidad: ceil(sup * porM2 * 1.05), unidad: 'unidades',
             detalle: `${porM2} por m² + 5% de roturas` },
-          { item: 'Cemento', cantidad: ceil(mezcla * 300), unidad: 'kg',
-            detalle: 'mezcla de asiento 1:1:6' },
-          { item: 'Cal hidratada', cantidad: ceil(mezcla * 200), unidad: 'kg' },
+          { item: 'Cemento', cantidad: ceil(mezcla * R.cementoPorM3), unidad: 'kg',
+            detalle: `mezcla de asiento 1:1:6 · ${ceil(mezcla * R.cementoPorM3 / 50)} bolsa/s de 50 kg` },
+          { item: 'Cal hidratada', cantidad: ceil(mezcla * R.calPorM3), unidad: 'kg' },
           { item: 'Arena', cantidad: d2(mezcla * 1.1), unidad: 'm³' },
         ],
         supuestos: [
