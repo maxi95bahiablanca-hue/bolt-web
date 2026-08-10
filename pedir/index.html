@@ -1187,6 +1187,53 @@ function terminarPreguntas(){
     return `• ${p.pregunta} ${r.valor}`;
   }).filter(Boolean);
   S.resumen = [S.resumen || S.oficio || 'Solicitud', ...lineas].join('\n');
+
+  // 🔴 10-ago-2026 — quien pone el oficio normalmente es la IA. Si la IA no
+  // contestó (cuota de Google agotada) y el cliente eligió "Seguir igual",
+  // llegaba hasta el final SIN oficio: cargaba dirección, nombre y teléfono, y
+  // recién ahí le decíamos "no pudimos identificar el oficio, volvé y elegilo".
+  // Un pedido sin oficio no le llega a ningún profesional: queda muerto.
+  // Ahora se pide acá, que es donde el cliente todavía está contando qué necesita.
+  if (!S.profesionId){ elegirOficio(); return; }
+  ir(3);
+}
+
+/** La lista de oficios, para cuando no lo pudimos deducir solos.
+ *  Se pinta adentro de la misma caja de preguntas: para el cliente es una
+ *  pregunta más del asistente, no un error nuestro. */
+async function elegirOficio(){
+  // El catálogo puede no haber cargado. Se reintenta acá: sin lista no hay
+  // nada que elegir, y ése es el único caso en que el pedido sí se traba.
+  if (!CATALOGO.length){
+    try {
+      const { data } = await sb.from('professions').select('id,name').order('name');
+      CATALOGO = data || [];
+    } catch (e) { console.error('BOLT · sin catálogo de oficios:', e); }
+  }
+
+  $('cajaPreg').style.display = 'flex';
+  $('entendi').style.display = 'none';
+  $('prog').innerHTML = ''; $('progTxt').textContent = '';
+  $('errChat').textContent = '';
+
+  if (!CATALOGO.length){
+    $('preguntaTxt').textContent = 'No pudimos cargar la lista de oficios.';
+    $('opciones').innerHTML = '<button class="opcion" onclick="elegirOficio()">Probar de nuevo →</button>';
+    $('errChat').textContent = 'Fijate que tengas internet y probá otra vez.';
+    return;
+  }
+
+  $('preguntaTxt').textContent = '¿A quién necesitás?';
+  $('opciones').innerHTML = CATALOGO.map(p =>
+    `<button class="opcion" onclick="tomarOficio(${p.id}, this)">${esc(p.name)}</button>`).join('');
+}
+
+function tomarOficio(id, el){
+  S.profesionId = Number(id);
+  S.oficio = el.textContent.trim();
+  // Que quede escrito en lo que lee el profesional: si la IA no armó el
+  // resumen, el oficio elegido a mano es el único dato firme que hay.
+  if (!/^\s*\w/.test(S.resumen || '')) S.resumen = S.oficio;
   ir(3);
 }
 
@@ -1579,7 +1626,13 @@ async function pedir(){
   $('errDatos').textContent = '';
   if (S.nombre.length < 2){ $('errDatos').textContent = 'Poné tu nombre.'; return; }
   if (S.tel.length < 8){ $('errDatos').textContent = 'Poné tu WhatsApp con característica.'; return; }
-  if (!S.profesionId){ $('errDatos').textContent = 'No pudimos identificar el oficio. Volvé y elegilo de la lista.'; return; }
+  // Red de última instancia. No debería llegar acá sin oficio —se pide al
+  // terminar las preguntas—, pero si pasa, se lo lleva a elegirlo en vez de
+  // dejarlo con un cartel y sin salida.
+  if (!S.profesionId){
+    $('errDatos').textContent = 'Falta decir a quién necesitás.';
+    ir(2); elegirOficio(); return;
+  }
 
   btn.disabled = true; btn.textContent = 'Buscando…';
   try {
