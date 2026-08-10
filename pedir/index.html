@@ -390,6 +390,24 @@
   .mini:hover{border-color:var(--bord2);color:var(--text)}
 
   .col-der{background:var(--surf);border:1px solid var(--bord);border-radius:26px;display:flex;flex-direction:column;min-height:300px;overflow:hidden}
+
+  /* La entrega del contacto */
+  .entrega{padding:4px 0 8px}
+  .ent-tit{font-size:1.45rem;font-weight:700;letter-spacing:-.02em;line-height:1.2;margin-bottom:8px}
+  .ent-sub{font-size:.95rem;color:var(--muted);line-height:1.5;margin-bottom:16px}
+  .ent-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    border-radius:999px;padding:15px;font-size:1rem;font-weight:600;text-decoration:none;
+    margin-bottom:8px;cursor:pointer;border:0}
+  .ent-wa{background:var(--yellow);color:#000}
+  .ent-sec{background:#161616;color:#fff}
+  .ent-cod{background:#161616;border-radius:16px;padding:18px;text-align:center;margin:12px 0;
+    border-left:3px solid var(--yellow)}
+  .ent-cod-lbl{font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:#5C5C5C;font-weight:600;margin-bottom:8px}
+  .ent-cod-num{font-size:2.4rem;font-weight:700;color:var(--yellow);letter-spacing:8px;line-height:1}
+  .ent-cod-hint{font-size:.85rem;color:var(--muted);margin-top:10px;line-height:1.45}
+  .ent-aviso{background:#161616;border-radius:16px;padding:14px 16px;font-size:.88rem;
+    color:var(--muted);line-height:1.5}
+  .ent-aviso b{display:block;color:#fff;font-size:.95rem;margin-bottom:4px}
   .chat-top{padding:14px 18px;border-bottom:1px solid var(--bord);font-size:.85rem;color:var(--muted)}
   .chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:9px;min-height:140px}
   .msg{max-width:82%;padding:10px 16px;border-radius:20px;font-size:.9rem;white-space:pre-wrap;word-break:break-word}
@@ -680,8 +698,18 @@
               <div class="eta" id="segEta"></div>
             </div>
             <div class="estado-txt" id="estadoTxt"></div>
+
+            <!-- 🔴 10-ago-2026 — LA ENTREGA DEL CONTACTO.
+                 Lo mismo que se hizo en la app: BOLT pasa el cliente y se corre
+                 al costado. Los pasos dependían de que el profesional marcara
+                 "salí", "llegué", "empecé", y en las pruebas el primero se usó
+                 3 veces sobre 87 — no porque se olviden, sino porque nadie que
+                 tiene su propio oficio quiere fichar. Queda lo que no se puede
+                 delegar: el código de la puerta y preguntar después cómo fue. -->
+            <div id="cajaEntrega" style="display:none"></div>
+
             <div id="cajaObra" style="display:none"></div>
-            <div class="pasos" id="pasos"></div>
+            <div class="pasos" id="pasos" style="display:none"></div>
             <!-- Cuando el profesional toca "Llegué", tiene que decir su código:
                  así el cliente sabe que el que está en la puerta es el suyo. -->
             <div id="cajaCodigo" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--bord)">
@@ -1735,7 +1763,7 @@ async function elegir(jobId){
       .eq('quote_group_id', S.quoteGroupId).neq('id', jobId).in('status', ['pending','accepted']);
     await sb.from('jobs').update({ quote_group_id: null }).eq('id', jobId);
     const { data } = await sb.from('jobs')
-      .select('id,status,address,notes,verification_code,scheduled_for,scheduled_ok,on_the_way_at,is_multiday,estimated_sessions,completed_sessions,current_session_start,total_minutes_worked,scheduled_return,professionals(id,user_id,first_name,last_name,phone,avg_rating,completed_jobs,avatar_url)')
+      .select('id,status,address,notes,verification_code,scheduled_for,scheduled_ok,on_the_way_at,is_multiday,estimated_sessions,completed_sessions,current_session_start,total_minutes_worked,scheduled_return,professions(name),professionals(id,user_id,first_name,last_name,phone,avg_rating,completed_jobs,avatar_url)')
       .eq('id', jobId).single();
     mostrarListo(data);
     avisarAlProfesional('🎉 Te eligieron', (S.nombre || 'El cliente') + ' te eligió para el trabajo. Entrá para coordinar el día y la hora.');
@@ -1928,6 +1956,44 @@ function pintarPasos(estado){
   //    Lo que sí hace falta decir es lo otro: cuando el profesional SALIÓ, que
   //    le pida el código antes de abrirle la puerta. Eso es seguridad, no
   //    coordinación.
+  // ── La entrega del contacto ──────────────────────────────────────────────
+  //  Con el profesional ya elegido, esto es TODO lo que el cliente necesita:
+  //  cómo hablarle, el código para la puerta, y saber que le vamos a preguntar
+  //  cómo le fue. Nada que esperar, nada que mirar.
+  const j = S.job || {};
+  const pro = j.professionals || {};
+  const hayPro = !!pro.id && ['accepted', 'arrived', 'in_progress'].includes(estado);
+  if (hayPro){
+    // wa.me quiere el número limpio y con característica. En la base están
+    // cargados de varias formas (con 0 adelante, con +54 9, con guiones).
+    const crudo = String(pro.phone || '').replace(/\D/g, '');
+    const numero = crudo ? (crudo.startsWith('54') ? crudo : '549' + crudo.replace(/^0/, '')) : '';
+    const nom = pro.first_name || 'el profesional';
+    const texto = encodeURIComponent(
+      'Hola ' + nom + '! Te escribo por BOLT, por el pedido de ' +
+      ((j.professions || {}).name || 'trabajo').toLowerCase() + ' en ' + (j.address || 'mi domicilio') + '.'
+    );
+    $('cajaEntrega').style.display = 'block';
+    $('cajaEntrega').innerHTML =
+      '<div class="entrega">' +
+        '<div class="ent-tit">Listo. Ahora hablás con ' + esc(nom) + '</div>' +
+        '<div class="ent-sub">Le avisamos que lo elegiste. Escribile y arreglen el día y la hora que a vos te queden bien.</div>' +
+        (numero
+          ? '<a class="ent-btn ent-wa" href="https://wa.me/' + numero + '?text=' + texto + '" target="_blank" rel="noopener">Escribirle por WhatsApp</a>' +
+            '<a class="ent-btn ent-sec" href="tel:' + numero + '">Llamarlo</a>'
+          : '<div class="ent-sub">Todavía no cargó su teléfono: escribile por el chat de acá al lado.</div>') +
+        (j.verification_code
+          ? '<div class="ent-cod"><div class="ent-cod-lbl">Tu código de seguridad</div>' +
+            '<div class="ent-cod-num">' + esc(String(j.verification_code)) + '</div>' +
+            '<div class="ent-cod-hint">Pediselo cuando toque el timbre. Si el que te dice no coincide, no es de BOLT.</div></div>'
+          : '') +
+        '<div class="ent-aviso"><b>Te escribimos para saber cómo te fue</b>' +
+        'En un par de días te mandamos un mensaje por WhatsApp. Con eso cuidamos que los profesionales de BOLT sean los que tienen que estar.</div>' +
+      '</div>';
+  } else {
+    $('cajaEntrega').style.display = 'none';
+  }
+
   const enCamino = estado === 'accepted' && !!(S.job || {}).on_the_way_at;
   // Si es una obra de varios días, `pintarObra()` ya usa esta caja: no se pisa.
   if (enCamino && !(S.job || {}).is_multiday){
