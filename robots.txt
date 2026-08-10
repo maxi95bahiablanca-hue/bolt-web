@@ -1,0 +1,7 @@
+# La página de material de aire es privada: además del código de acceso, que no
+# la levante ningún buscador. El contenido va cifrado igual, pero no hace falta
+# que la URL aparezca en Google.
+User-agent: *
+Disallow: /publicidad/
+
+Sitemap: https://bolt.com.ar/sitemap.xml

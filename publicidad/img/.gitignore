@@ -1,0 +1,4 @@
+# Las capturas se toman en PNG y se sirven en JPG: el PNG pesa 4 veces más y
+# esta página se mira desde el celular, con datos. Los .png quedan en disco
+# como original, pero no se suben.
+*.png
