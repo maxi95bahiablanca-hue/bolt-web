@@ -554,10 +554,14 @@ const CALCULADORAS = [
     campos: [
       { k: 'ancho', label: 'Ancho', unidad: 'm', def: 1.5, paso: 0.1 },
       { k: 'alto',  label: 'Alto',  unidad: 'm', def: 1.2, paso: 0.1 },
-      { k: 'separacion', label: 'Separación entre barrotes', unidad: 'cm', def: 12, paso: 1 },
+      // El tope de 20 cm no es capricho: mas separado que eso deja pasar
+      // una cabeza de chico y la reja deja de ser reja. El piso de 5 evita
+      // ademas que una separacion en cero rompa la division de abajo.
+      { k: 'separacion', label: 'Separación entre barrotes', unidad: 'cm', def: 12, paso: 1, min: 5, max: 20 },
     ],
     calcular(v) {
-      const barrotes = Math.max(2, Math.floor(v.ancho * 100 / v.separacion) - 1);
+      const sep = Math.max(5, v.separacion || 12);
+      const barrotes = Math.max(2, Math.floor(v.ancho * 100 / sep) - 1);
       const marco = 2 * (v.ancho + v.alto);
       const metrosBarrote = barrotes * v.alto;
       const sup = v.ancho * v.alto;
@@ -566,7 +570,7 @@ const CALCULADORAS = [
         partidas: [
           { item: 'Caño estructural 30×30 (marco)', cantidad: d1(marco * 1.1), unidad: 'metros' },
           { item: 'Barrote macizo 12 mm', cantidad: d1(metrosBarrote * 1.1), unidad: 'metros',
-            detalle: `${barrotes} barrotes cada ${v.separacion} cm` },
+            detalle: `${barrotes} barrotes cada ${sep} cm` },
           { item: 'Electrodos para soldar', cantidad: ceil((marco + metrosBarrote) / 8), unidad: 'kg' },
           { item: 'Antióxido', cantidad: ceil(sup * 2 / 10) || 1, unidad: 'litros' },
           { item: 'Esmalte sintético', cantidad: ceil(sup * 2 / R.esmalte) || 1, unidad: 'litros' },
@@ -574,7 +578,7 @@ const CALCULADORAS = [
         ],
         supuestos: [
           `Reja de ${v.ancho} × ${v.alto} m`,
-          `Barrotes verticales cada ${v.separacion} cm`,
+          `Barrotes verticales cada ${sep} cm`,
           '+10% de material por cortes',
         ],
       };
