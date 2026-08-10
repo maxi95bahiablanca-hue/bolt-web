@@ -70,7 +70,12 @@
   .btn-y:hover{transform:translateY(-2px);box-shadow:0 12px 34px rgba(255,214,0,.28)}
   .btn-linea{border-color:var(--bord2);color:var(--tx)}
   .btn-linea:hover{border-color:var(--tx);transform:translateY(-2px)}
-  @media(max-width:880px){ nav .links{display:none} }
+
+  /* 🔴 10-ago-2026 — al ocultar los links se perdia el 'margin-left:auto'
+     que empujaba el boton contra el borde, y en el celular quedaba pegado al
+     logo con 130 px de aire a la derecha: se veia descentrado en TODAS las
+     paginas. El boton tiene que empujarse solo. */
+  @media(max-width:880px){ nav .links{display:none} nav .btn-blanco{margin-left:auto} }
 
   /* El halo */
   body::before{
