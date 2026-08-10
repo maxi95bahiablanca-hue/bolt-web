@@ -1052,6 +1052,15 @@ function pararEspera(){
   if (caja) caja.style.display = 'none';
 }
 
+/** Volver a intentar con lo mismo que ya había escrito, sin hacerle repetir
+ *  nada. Se vuelve a mostrar la espera para que se note que está trabajando. */
+function reintentarAnalisis(){
+  $('cajaPreg').style.display = 'none';
+  $('errChat').textContent = '';
+  arrancarEspera();
+  analizar(S.resumen || $('txtProblema').value.trim());
+}
+
 async function analizar(mensaje){
   S.resumen = mensaje;
   $('errChat').textContent = '';
@@ -1079,13 +1088,20 @@ async function analizar(mensaje){
     // cliente y el profesional lo lee en las notas. Pero se avisa, porque
     // saltar en silencio a la dirección parece que la web se comió el paso
     // (31-jul-2026: pasó con "PINTAR PIEZA" y no se entendía por qué).
+    // 🔴 10-ago-2026 — la causa real de que esto saliera seguido: Google corta
+    // por cuota POR MINUTO cuando se hacen varias consultas al hilo. La función
+    // ahora reintenta sola, pero si igual falla, acá tiene que haber una puerta
+    // para volver a probar: antes la única salida era seguir sin preguntas, y
+    // el asistente se perdía por un corte de diez segundos.
     pararEspera();
     $('cajaPreg').style.display = 'flex';
     $('entendi').style.display = 'none';
     $('prog').innerHTML = ''; $('progTxt').textContent = '';
-    $('preguntaTxt').textContent = 'No pudimos armar las preguntas en este momento.';
-    $('opciones').innerHTML = '<button class="opcion" onclick="terminarPreguntas()">Seguir igual con lo que escribí →</button>';
-    $('errChat').textContent = 'El profesional va a ver igual lo que contaste.';
+    $('preguntaTxt').textContent = 'El asistente está demorando.';
+    $('opciones').innerHTML =
+      '<button class="opcion" onclick="reintentarAnalisis()">Probar de nuevo →</button>' +
+      '<button class="opcion" onclick="terminarPreguntas()">Seguir igual con lo que escribí →</button>';
+    $('errChat').textContent = 'Si seguís igual, el profesional lee tal cual lo que contaste.';
   }
 }
 
