@@ -1229,9 +1229,12 @@ function usarGPS(){
 function seguirTrasUbicacion(){
   pintarResumen();
   ir(4);
-  const nom = ($('txtNombre').value || '').trim();
-  const tel = ($('txtTel').value || '').replace(/\D/g, '');
-  if (nom.length >= 2 && tel.length >= 8 && S.profesionId) pedir();
+  // 🔴 Acá se disparaba `pedir()` solo cuando los datos ya estaban. Quedaba
+  //    peor que antes: la pantalla aparecía y se iba sola, sin dejar mirar el
+  //    resumen ni confirmar el teléfono (Maxi, 9-ago-2026). Ahorrarle el paso
+  //    no era sacárselo de adelante: era no hacerlo ESCRIBIR de nuevo, y eso
+  //    ya lo resuelve `pintarSesion()` dejando los campos cargados.
+  //    La última pantalla antes de buscar se mira y se confirma.
 }
 
 async function confirmarUbic(){
