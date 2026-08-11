@@ -1113,9 +1113,16 @@ const MOTIVOS = {
 };
 async function preguntarAlTrabajador(jobId, userId, motivo){
   const m = MOTIVOS[motivo] || { pregunta: '¿Cómo viene ese trabajo? Contanos así lo destrabamos.' };
+  // 🔴 11-ago-2026 — auditoría: acá decía "Listo, le preguntamos" pasara lo que
+  // pasara. `functions.invoke` NO tira excepción con un 403 ni con un 500:
+  // devuelve { data, error }, así que el catch no corría nunca. Y aunque
+  // conteste 200, la función avisa si el push no salió ({ sent:false }). Un
+  // aviso que no salió NO se informa como enviado: hay alguien esperando.
   try {
-    await sb.functions.invoke('send-push', {
+    const { data: resp, error } = await sb.functions.invoke('send-push', {
       body: { userId, title: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 2.6 4.8 13.4h6L9.9 21.4l8.6-11h-6.2z"/></svg> BOLT te pregunta', body: m.pregunta, data: { jobId, screen: 'tracking' } } });
+    if (error) return aviso('No se pudo avisar: ' + (error.message || 'error de la función'), 'bad');
+    if (resp && resp.sent === false) return aviso('NO le llegó: ' + (resp.reason || 'el push no salió') + '. Llamalo.', 'bad');
     aviso('Listo, le preguntamos. Si no contesta sigue apareciendo acá.');
   } catch (e) { aviso('No se pudo avisar: ' + e.message, 'bad'); }
 }
