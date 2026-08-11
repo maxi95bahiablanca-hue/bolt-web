@@ -1,0 +1,17 @@
+{
+  "name": "BOLT — Oficios a domicilio",
+  "short_name": "BOLT",
+  "description": "Contás qué se te rompió y te responden los profesionales disponibles cerca. Bahía Blanca.",
+  "start_url": "/pedir/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#08090A",
+  "theme_color": "#08090A",
+  "lang": "es-AR",
+  "icons": [
+    { "src": "/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
