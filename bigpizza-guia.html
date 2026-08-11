@@ -25,7 +25,7 @@
     --bg:#0B0B0C; --sup:rgba(255,255,255,.055); --linea:rgba(255,255,255,.12);
     --txt:#F3F1EE; --mut:#A19C94; --mut2:#6C675F;
     --nar:#F7941D; --nar-b:rgba(247,148,29,.14); --nar-l:rgba(247,148,29,.42);
-    --peya:#FA0050; --ok:#35C275;
+    --peya:#FA0050;
     --r:24px; --pill:999px;
   }
   html{scroll-behavior:smooth}
@@ -71,15 +71,15 @@
   nav a:not(.on):active{background:rgba(255,255,255,.08)}
 
   /* ── Secciones ────────────────────────────────────────────────────────── */
-  section{padding:64px 0 30px;position:relative}
-  .eyebrow{display:inline-block;font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+  section{padding:82px 0 18px;position:relative}
+  .eyebrow{display:inline-block;font-size:12px;margin-top:6px;letter-spacing:.18em;text-transform:uppercase;
     font-weight:700;color:var(--nar);margin-bottom:12px}
   h2{font-size:clamp(27px,7vw,34px);line-height:1.1;letter-spacing:-1px;font-weight:800}
-  .txt{margin-top:14px;font-size:17px;color:var(--mut)}
+  .txt{margin-top:16px;font-size:17px;color:var(--mut)}
   .txt b{color:var(--txt);font-weight:600}
 
   /* Foto de sección: entra desde abajo y se acerca despacio */
-  .escena{position:relative;height:230px;border-radius:var(--r);overflow:hidden;margin:24px 0 8px;
+  .escena{position:relative;height:230px;border-radius:var(--r);overflow:hidden;margin:28px 0 6px;
     border:1px solid var(--linea)}
   .escena img{width:100%;height:100%;object-fit:cover;transform:scale(1.02);
     transition:transform 1.4s cubic-bezier(.2,.7,.3,1)}
@@ -90,7 +90,7 @@
   .escena .cap{position:absolute;left:16px;right:16px;bottom:14px;z-index:2;font-size:15px;color:#EDEAE5}
 
   /* Tarjetas translúcidas */
-  .caja{background:var(--sup);border:1px solid var(--linea);border-radius:var(--r);padding:20px;margin-top:14px;
+  .caja{background:var(--sup);border:1px solid var(--linea);border-radius:var(--r);padding:22px;margin-top:18px;
     backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
   .caja h3{font-size:19px;font-weight:700;letter-spacing:-.3px}
   .caja p{margin-top:7px;font-size:16px;color:var(--mut)}
@@ -110,7 +110,7 @@
   .bt{display:inline-flex;align-items:center;gap:7px;padding:10px 15px;border-radius:var(--pill);
     background:rgba(255,255,255,.06);border:1px solid var(--linea);font-size:14.5px;font-weight:600}
   .bt.nar{background:var(--nar);border-color:var(--nar);color:#1A1104}
-  .bt.mal{color:#F2555A;border-color:rgba(242,85,90,.34)}
+  
   .bt svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;
     stroke-linecap:round;stroke-linejoin:round}
   .quees{margin-top:11px;font-size:15px;color:var(--mut)}
@@ -122,7 +122,7 @@
   .demo .top{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--mut)}
   .demo .chip{padding:5px 12px;border-radius:var(--pill);font-size:12.5px;font-weight:700;
     background:var(--nar-b);border:1px solid var(--nar-l);color:var(--nar);transition:.3s}
-  .demo .chip.ok{background:rgba(53,194,117,.14);border-color:rgba(53,194,117,.4);color:var(--ok)}
+  .demo .chip.ok{background:rgba(255,255,255,.08);border-color:var(--linea);color:var(--mut)}
   .demo .quien{margin-top:12px;font-size:19px;font-weight:700}
   .demo .dir{font-size:15px;color:var(--mut);margin-top:2px}
   .demo ul{list-style:none;margin:14px 0 0}
@@ -132,7 +132,7 @@
     display:flex;align-items:center;justify-content:center;transition:.2s}
   .demo li .tk svg{width:12px;height:12px;fill:none;stroke:#0B0B0C;stroke-width:3.4;opacity:0;
     stroke-linecap:round;stroke-linejoin:round}
-  .demo li.listo .tk{background:var(--ok);border-color:var(--ok)}
+  .demo li.listo .tk{background:var(--nar);border-color:var(--nar)}
   .demo li.listo .tk svg{opacity:1}
   .demo li.listo{opacity:.45;text-decoration:line-through}
   .demo .pie{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap}
@@ -148,11 +148,14 @@
     animation:latir 1.9s ease-in-out infinite}
 
   /* Avisos */
-  .ojo{margin-top:16px;border-radius:20px;padding:16px;font-size:15.5px;
-    background:rgba(227,179,65,.10);border:1px solid rgba(227,179,65,.3);color:#F0D28A}
-  .ojo b{color:#FFE9B0}
-  .bien{background:rgba(53,194,117,.10);border-color:rgba(53,194,117,.3);color:#A9E9C4}
-  .bien b{color:#D6F7E4}
+  /* Un solo tipo de cartel. Maxi (11-ago): "no me gustan los colores, un cartel
+     verde, otro amarillo, otro rojo. Hacelo con el estilo de Big Pizza, sin
+     colores y a lo sumo naranja algunas palabras". */
+  .ojo{margin-top:22px;border-radius:20px;padding:18px 20px;font-size:15.5px;color:var(--mut);
+    background:var(--sup);border:1px solid var(--linea);border-left:2px solid var(--nar);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  .ojo b{color:var(--txt);font-weight:600}
+  .ojo em{font-style:normal;color:var(--nar);font-weight:600}
 
   /* Entrada de los bloques al aparecer */
   .rev{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.3,1)}
@@ -183,7 +186,8 @@
 
 <nav id="nav">
   <a href="#panel" class="on">El panel</a>
-  <a href="#botones">Los botones</a>
+  <a href="#botones">La tarjeta</a>
+  <a href="#demora">La demora</a>
   <a href="#uber">El envío</a>
   <a href="#peya">Lo que viene</a>
 </nav>
@@ -194,8 +198,8 @@
     <span class="eyebrow">Primero</span>
     <h2>Todo pasa en una sola pantalla</h2>
     <div class="txt">El pedido entra por WhatsApp, el bot lo toma y aparece <b>solo</b> en
-      el panel. Nadie lo carga a mano. Lo único que hay que hacer es moverlo de columna
-      a medida que avanza.</div>
+      el panel. Nadie lo carga a mano — y tampoco hay que moverlo: <b>el pedido avanza
+      solo con el reloj</b>, y en cada etapa el cliente recibe su aviso.</div>
   </div>
 
   <div class="escena rev">
@@ -218,7 +222,7 @@
     <p>Terminado. Si es delivery, sale el cadete; si es retiro, espera al cliente.</p>
   </div>
 
-  <div class="ojo bien rev"><b>Lo bueno:</b> cada vez que movés el pedido, el cliente
+  <div class="ojo rev"><b>Lo bueno:</b> cada vez que movés el pedido, el cliente
     recibe el aviso por WhatsApp automáticamente. Ustedes no escriben nada.</div>
 </section>
 
@@ -228,7 +232,9 @@
     <span class="eyebrow">La tarjeta</span>
     <h2>Probala acá mismo</h2>
     <div class="txt">Esta es igual a la de verdad. <b>Tocá los productos</b> para tildarlos
-      y el botón naranja para avanzar. No pasa nada: es de mentira.</div>
+      y el botón naranja para adelantar la etapa. Ojo: en el panel real ese botón es para
+      <em>corregir</em> — si algo se adelantó o se atrasó respecto del reloj. No pasa nada,
+      esta es de mentira.</div>
   </div>
 
   <div class="demo rev" id="demo">
@@ -262,7 +268,7 @@
     <div class="btns" style="margin-top:12px">
       <span class="bt"><svg viewBox="0 0 24 24"><path d="M6.6 9.4V3.8h10.8v5.6"/><rect x="3.6" y="9.4" width="16.8" height="7.4" rx="2"/><path d="M6.6 14.6h10.8v5.6H6.6z"/></svg> Imprimir</span>
       <span class="bt"><svg viewBox="0 0 24 24"><circle cx="12" cy="10.2" r="2.5"/><path d="M12 21s-6.5-5.3-6.5-10.3a6.5 6.5 0 0 1 13 0C18.5 15.7 12 21 12 21z"/></svg> Ruta</span>
-      <span class="bt mal"><svg viewBox="0 0 24 24"><path d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6"/></svg> Cancelar</span>
+      <span class="bt"><svg viewBox="0 0 24 24"><path d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6"/></svg> Cancelar</span>
     </div>
     <div class="quees"><b>Imprimir</b> saca otra comanda (si se perdió o se manchó).
       <b>Ruta</b> abre el mapa para ver dónde queda. <b>Cancelar</b> es sólo si el
@@ -272,6 +278,40 @@
   <div class="ojo rev"><b>Ojo con uno:</b> el tachito de basura borra el pedido para
     siempre y no aparece más en los números del día. Es sólo para pedidos de prueba.
     Si un cliente se arrepintió, va <b>Cancelar</b>, no el tachito.</div>
+</section>
+
+<!-- ── 2 bis. LA DEMORA ────────────────────────────────────────────────── -->
+<section id="demora" class="env">
+  <div class="rev">
+    <span class="eyebrow">Cuando se llena</span>
+    <h2>El botón que corre el reloj</h2>
+    <div class="txt">Los tiempos de arriba valen para una noche normal. Un viernes a las
+      21:30, con el horno lleno, <b>no se cumplen</b> — y el cliente recibe un “ya salió”
+      de algo que todavía está en el mostrador.</div>
+  </div>
+
+  <div class="caja rev">
+    <h3>Arriba, al lado del reloj</h3>
+    <p>Hay un botón que dice <b>Normal</b>. Tocándolo pasa a <b>+10 min</b>, otra vez a
+      <b>+20</b>, y otra vez vuelve a Normal.</p>
+    <div class="btns" style="margin-top:14px">
+      <span class="bt">Normal</span>
+      <span class="bt nar">+10 min</span>
+      <span class="bt nar">+20 min</span>
+    </div>
+    <div class="quees">Con <b>+10</b>, la pizza pasa de salir a los 15 minutos a salir a
+      los 20, y el total de 35 a 45 (el viaje pasa de 20 a 25). Con <b>+20</b>, el total
+      se va a 55: eso ya es mucho para prometer, usalo sólo si de verdad está así.</div>
+  </div>
+
+  <div class="ojo rev"><b>Por qué importa:</b> ese botón no es un cartelito. Corre el
+    reloj del panel <em>y</em> lo que el bot le contesta al cliente cuando pregunta
+    “¿falta mucho?”. Las dos cosas a la vez, siempre de acuerdo.</div>
+
+  <div class="ojo rev"><b>Y si nadie lo toca:</b> el sistema se da cuenta solo. Con 5
+    pedidos activos suma 10 minutos y con 8 suma 20, sin que nadie haga nada. El botón
+    sirve para cuando <em>ustedes</em> saben algo que el contador no sabe: se rompió algo,
+    falta gente, entró un pedido enorme.</div>
 </section>
 
 <!-- ── 3. EL ENVÍO HOY ─────────────────────────────────────────────────── -->
@@ -331,7 +371,7 @@
     letras y <b>vuelve el botón de Uber</b>, como hoy. Nunca se queda un pedido esperando
     sin que nadie se entere.</div>
 
-  <div class="ojo bien rev"><b>Lo que NO cambia:</b> las columnas, los tildes, la comanda
+  <div class="ojo rev"><b>Lo que NO cambia:</b> las columnas, los tildes, la comanda
     y los avisos al cliente. Todo lo que ya saben hacer sigue igual.</div>
 </section>
 
@@ -356,7 +396,7 @@
       links.forEach(function (a) { a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id); });
     });
   }, { rootMargin: '-45% 0px -45% 0px' });
-  ['panel', 'botones', 'uber', 'peya'].forEach(function (id) { obs2.observe(document.getElementById(id)); });
+  ['panel', 'botones', 'demora', 'uber', 'peya'].forEach(function (id) { obs2.observe(document.getElementById(id)); });
 
   // ── La tarjeta de mentira, que se comporta como la de verdad ──────────
   document.querySelectorAll('#items li').forEach(function (li) {
@@ -365,10 +405,10 @@
 
   // Mismos estados y mismos textos que el panel (SIGUIENTE en admin.html).
   var PASOS = [
-    { estado: 'Nuevo',          boton: 'Aceptar / preparar',  hora: 'recién',  pista: 'Tocá “Aceptar / preparar” para arrancar' },
-    { estado: 'En preparación', boton: 'Marcar en camino',    hora: '3 min',   pista: 'Mientras se hace, tildá los productos que van saliendo' },
-    { estado: 'En camino',      boton: 'Marcar entregado',    hora: '18 min',  pista: 'Acá el cliente recibe “tu pedido salió”' },
-    { estado: 'Entregado',      boton: 'Listo',               hora: '31 min',  pista: '✓ Así se cierra un pedido. Fácil, ¿no?' },
+    { estado: 'Nuevo',          boton: 'Aceptar / preparar',  hora: 'recién',  pista: 'En el panel real esto pasa solo a los 7 minutos' },
+    { estado: 'En preparación', boton: 'Marcar en camino',    hora: '7 min',   pista: 'Mientras se hace, tildá los productos que van saliendo' },
+    { estado: 'En camino',      boton: 'Marcar entregado',    hora: '23 min',  pista: 'Acá el cliente recibe “tu pedido salió”, solo' },
+    { estado: 'Entregado',      boton: 'Listo',               hora: '35 min',  pista: 'Así se cierra un pedido. Y todo eso pasó solo.' },
   ];
   var i = 0;
   var elEstado = document.getElementById('estado');
