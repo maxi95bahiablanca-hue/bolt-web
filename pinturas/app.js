@@ -6,15 +6,19 @@
    ─────────────────────────────────────────────────────────────────────────── */
 (function () {
   "use strict";
-  var D = window.PAMPACRYL, PRECIOS = window.PAMPACRYL_PRECIOS || {}, COLORES = window.PAMPACRYL_COLORES || [];
+  var D = window.PAMPACRYL, PRECIOS = window.PAMPACRYL_PRECIOS || {}, COLORES = window.PAMPACRYL_COLORES || [], ACC = window.PAMPACRYL_ACCESORIOS || [];
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var el = function (tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 
   /* ── precios ─────────────────────────────────────────────────────────── */
   var IVA = D.PRECIOS_INCLUYEN_IVA ? 0 : D.IVA;
-  function conIva(lista) { return lista * (1 + IVA); }
-  function bolt(lista) { return conIva(lista) * (1 - D.DESCUENTO_BOLT); }
+  // bolt()   = lo que paga el cliente de BOLT (con IVA).
+  // conIva() = el precio de referencia "en pinturería" que se muestra tachado.
+  // Si la lista ya viene con el descuento, el tachado se reconstruye (÷ 0,70);
+  // si no, la lista es el tachado y el BOLT es lista × 0,70.
+  function bolt(lista) { return D.LISTA_YA_CON_DESCUENTO ? lista * (1 + IVA) : lista * (1 + IVA) * (1 - D.DESCUENTO_BOLT); }
+  function conIva(lista) { return D.LISTA_YA_CON_DESCUENTO ? lista * (1 + IVA) / (1 - D.DESCUENTO_BOLT) : lista * (1 + IVA); }
   function pesos(n) { return "$" + Math.round(n).toLocaleString("es-AR"); }
   function ordenEnvase(e) { // "500 ML" < "1 L" < "4 L" … y kg aparte
     var m = /^([\d,]+)\s*(ML|L|KG)/.exec(e); if (!m) return 9999;
@@ -207,7 +211,7 @@
         b.onclick = function () { st.env = x.env; refrescar(); }; envs.appendChild(b);
       });
       var pr = $(".pr", pie), act = lista.filter(function (x) { return x.env === st.env; })[0];
-      if (act) { $("s", pr).textContent = "Lista " + pesos(conIva(act.lista)); $("b", pr).textContent = pesos(bolt(act.lista)); $("small", pr).textContent = "con BOLT · IVA incluido · " + act.env; }
+      if (act) { $("s", pr).textContent = "En pinturería " + pesos(conIva(act.lista)); $("b", pr).textContent = pesos(bolt(act.lista)); $("small", pr).textContent = "con BOLT · IVA incluido · " + act.env; }
       else { $("s", pr).textContent = ""; $("b", pr).textContent = "A cotizar"; $("small", pr).textContent = ""; }
       var bal = $(".balde", card); if (bal) bal.textContent = st.env ? baldeTexto(p, st.env, rt) : "";
     }
@@ -233,6 +237,33 @@
     });
   }
 
+  /* ── accesorios y herramientas ───────────────────────────────────────── */
+  function pintarAccesorios() {
+    var cont = $("#accesorios"); if (!cont || !ACC.length) return;
+    var grupos = (D.gruposAccesorios || []).slice();
+    ACC.forEach(function (x) { if (grupos.indexOf(x.grupo) < 0) grupos.push(x.grupo); });
+    grupos.forEach(function (g) {
+      var items = ACC.filter(function (x) { return x.grupo === g; }); if (!items.length) return;
+      var det = el("details", "acc-grupo"); if (g === grupos[0]) det.open = true;
+      det.innerHTML = "<summary><b>" + g + "</b><span>" + items.length + " artículos</span></summary>";
+      var lista = el("div", "acc-lista");
+      items.forEach(function (x, i) {
+        var row = el("div", "acc");
+        row.innerHTML = "<div class='n'>" + x.nombre + "</div><div class='p'><b>" + pesos(bolt(x.lista)) + "</b><s>" + pesos(conIva(x.lista)) + "</s></div>";
+        var b = el("button", "agregar chico", "Agregar"); b.type = "button";
+        b.onclick = function () { agregar({ id: "acc-" + g + "-" + i, nombre: x.nombre, variante: null, hex: null, env: "unidad", lista: x.lista, color: null, acc: true }); };
+        row.appendChild(b); lista.appendChild(row);
+      });
+      det.appendChild(lista); cont.appendChild(det);
+    });
+    var q = $("#buscaAcc");
+    if (q) q.addEventListener("input", function () {
+      var t = normal(q.value).trim();
+      $(".acc", cont).forEach(function (r) { r.style.display = !t || normal($(".n", r).textContent).indexOf(t) >= 0 ? "" : "none"; });
+      $(".acc-grupo", cont).forEach(function (dg) { var vis = $(".acc", dg).some(function (r) { return r.style.display !== "none"; }); dg.style.display = vis ? "" : "none"; if (t) dg.open = true; });
+    });
+  }
+
   /* ── el pedido ───────────────────────────────────────────────────────── */
   var carrito = [];
   try { carrito = JSON.parse(localStorage.getItem("pamp_carrito") || "[]"); } catch (_) { carrito = []; }
@@ -252,7 +283,7 @@
     carrito.forEach(function (it, i) {
       var row = el("div", "item");
       var sw = el("i", "sw2"); sw.style.background = (it.color && it.color.hex) || it.hex || "rgba(255,255,255,.08)"; row.appendChild(sw);
-      var d = el("div", "d"); d.innerHTML = "<b>" + it.nombre + (it.variante ? " · " + it.variante : "") + "</b><small>" + it.env + (it.color ? " · color " + it.color.es + " (" + it.color.codigo + ")" : "") + "</small>";
+      var d = el("div", "d"); d.innerHTML = "<b>" + it.nombre + (it.variante ? " · " + it.variante : "") + "</b><small>" + (it.acc ? "accesorio" : it.env) + (it.color ? " · color " + it.color.es + " (" + it.color.codigo + ")" : "") + "</small>";
       var q = el("div", "q"); q.innerHTML = "<button aria-label='menos'>−</button><span>" + it.cant + "</span><button aria-label='más'>+</button>";
       $$("button", q)[0].onclick = function () { it.cant--; if (it.cant <= 0) carrito.splice(i, 1); guardar(); pintarCarrito(); };
       $$("button", q)[1].onclick = function () { it.cant++; guardar(); pintarCarrito(); };
@@ -268,9 +299,9 @@
   function linkWp(total, sinPrecio) {
     var lineas = ["Hola BOLT 👋 Quiero pedir pinturas Pampacryl con el 30% de descuento:", ""];
     carrito.forEach(function (it) {
-      lineas.push("• " + it.cant + " × " + it.nombre + (it.variante ? " " + it.variante : "") + " — " + it.env + (it.color ? " — color " + it.color.es + " " + it.color.codigo : "") + (it.lista != null ? " — " + pesos(bolt(it.lista * it.cant)) : " — a cotizar"));
+      lineas.push("• " + it.cant + " × " + it.nombre + (it.variante ? " " + it.variante : "") + (it.acc ? "" : " — " + it.env) + (it.color ? " — color " + it.color.es + " " + it.color.codigo : "") + (it.lista != null ? " — " + pesos(bolt(it.lista * it.cant)) : " — a cotizar"));
     });
-    lineas.push("", "Total: " + pesos(total) + " (IVA incluido, con el 30% de BOLT)" + (sinPrecio ? " + lo que falta cotizar" : ""));
+    lineas.push("", "Total: " + pesos(total) + " (IVA incluido, precio BOLT)" + (sinPrecio ? " + lo que falta cotizar" : ""));
     var nom = $("#dNombre").value.trim(), zona = $("#dZona").value.trim();
     if (nom || zona) lineas.push("", (nom ? "Soy " + nom : "") + (zona ? (nom ? ", de " : "Zona: ") + zona : ""));
     lineas.push("", "Armado en bolt.com.ar/pinturas");
@@ -284,7 +315,7 @@
   var toastT; function toast(t) { var x = $("#toast"); x.textContent = t; x.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(function () { x.classList.remove("on"); }, 2200); }
 
   /* ── arranque ────────────────────────────────────────────────────────── */
-  pintarFamilias(); pintarGrilla(); pintarProductos(); pintarCarrito(); pintarTabs();
+  pintarFamilias(); pintarGrilla(); pintarProductos(); pintarAccesorios(); pintarCarrito(); pintarTabs();
   cargarFoto(D.fotos[0].id);
   try { var guardado = localStorage.getItem("pamp_color"); var c0 = COL.filter(function (c) { return c.codigo === guardado; })[0]; if (c0) elegirColor(c0); } catch (_) {}
   // reveal

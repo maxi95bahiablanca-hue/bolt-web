@@ -137,6 +137,24 @@
   .prod .colorSel i{width:18px;height:18px;border-radius:50%;border:1px solid rgba(255,255,255,.25);display:block}
   .prod .colorSel a{color:var(--y);cursor:pointer}
 
+  /* accesorios */
+  .acc-grupo{border:1px solid var(--bord);border-radius:20px;background:var(--surf);margin-bottom:10px;overflow:hidden}
+  .acc-grupo summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;font-size:1rem}
+  .acc-grupo summary::-webkit-details-marker{display:none}
+  .acc-grupo summary b{font-weight:600}
+  .acc-grupo summary span{color:var(--tx3);font-size:.85rem;margin-left:auto}
+  .acc-grupo summary::after{content:"+";color:var(--tx3);font-size:1.3rem;margin-left:14px;line-height:1}
+  .acc-grupo[open] summary::after{content:"–"}
+  .acc-lista{border-top:1px solid var(--bord)}
+  .acc{display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center;padding:12px 20px;border-bottom:1px solid rgba(255,255,255,.05);font-size:.92rem}
+  .acc:last-child{border-bottom:0}
+  .acc .n{min-width:0}
+  .acc .p{text-align:right;line-height:1.15;white-space:nowrap}
+  .acc .p b{display:block;font-weight:600}
+  .acc .p s{color:var(--tx3);font-size:.76rem}
+  .agregar.chico{padding:8px 14px;font-size:.82rem}
+  @media (max-width:560px){.acc{grid-template-columns:1fr auto} .acc .p{grid-column:1;text-align:left} .acc .agregar{grid-row:1/3}}
+
   /* carrito */
   .fab{position:fixed;right:18px;bottom:18px;z-index:70;display:flex;align-items:center;gap:10px;background:#fff;color:#08090A;border:0;border-radius:999px;padding:13px 20px 13px 16px;
     font-weight:600;font-size:.95rem;cursor:pointer;box-shadow:0 12px 40px rgba(0,0,0,.5);transition:transform .2s}
@@ -261,9 +279,19 @@
     <div id="lineas"></div>
   </section>
 
+  <!-- ─── ACCESORIOS ─── -->
+  <section id="herramientas">
+    <div class="sec-h rev">
+      <div class="eyebrow">Accesorios y herramientas</div>
+      <h2>Todo lo demás para pintar, al mismo precio</h2>
+      <p>Rodillos, pinceles, bandejas, cintas, lijas, extensores, guantes: lo que lleva un trabajo de pintura, de la misma lista.</p>
+    </div>
+    <div class="busca" style="max-width:520px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="buscaAcc" type="search" placeholder="Buscar un accesorio (rodillo, cinta, lija…)" autocomplete="off"></div>
+    <div id="accesorios" class="rev"></div>
+  </section>
+
   <footer>
-    <p><b style="color:var(--tx2)">Sobre los precios.</b> Lista de precios Pampacryl vigente desde el 1 de agosto de 2026, con el 30% de descuento de BOLT aplicado
-       e IVA incluido. Se confirman al cerrar el pedido por WhatsApp; los colores de la carta son una referencia de pantalla y se preparan en la fábrica.
+    <p><b style="color:var(--tx2)">Sobre los precios.</b> Son los precios BOLT de la lista Pampacryl vigente desde el 1 de agosto de 2026, con IVA incluido; el precio tachado es la referencia de pinturería (un 30% más). Se confirman al cerrar el pedido por WhatsApp; los colores de la carta son una referencia de pantalla y se preparan en la fábrica.
        Los rendimientos "en obra" son una estimación para saber cuánto comprar: dependen de la pared, la herramienta y la mano.</p>
   </footer>
 </div>
@@ -278,8 +306,8 @@
   <div class="ph"><h3>Tu pedido</h3><button class="cerrar" id="cerrarPanel" aria-label="Cerrar">✕</button></div>
   <div class="items" id="items"></div>
   <div class="tot">
-    <div class="l"><span>Precio de lista</span><span id="tLista">$0</span></div>
-    <div class="l"><span>Descuento BOLT (30%)</span><span class="desc" id="tDesc">−$0</span></div>
+    <div class="l"><span>En pinturería (referencia)</span><span id="tLista">$0</span></div>
+    <div class="l"><span>Lo que ahorrás con BOLT (30%)</span><span class="desc" id="tDesc">−$0</span></div>
     <div class="l g"><span>Total <small>IVA incluido</small></span><span id="tTotal">$0</span></div>
     <div class="datos">
       <input id="dNombre" placeholder="Tu nombre" autocomplete="name">
@@ -297,6 +325,7 @@
 <script src="datos.js"></script>
 <script src="precios.js"></script>
 <script src="colores.js"></script>
+<script src="accesorios.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -7,8 +7,12 @@
    · lista-de-precios-08-2026.pdf → precios.js (lista distribuidor, SIN IVA).
    · carta-de-colores.pdf → colores.js (1008 colores del sistema tintométrico).
 
-   Dos números que Maxi confirma o cambia:
-   · DESCUENTO_BOLT: el 30 % acordado con la fábrica, sobre el precio de lista.
+   Los precios (Maxi, 16-ago-2026: "esa lista ya tiene descuentos"):
+   · La lista distribuidora YA ES el precio con el 30 % de BOLT: se muestra tal
+     cual + IVA. No se le descuenta nada más.
+   · Como referencia se muestra tachado el precio "en pinturería", que es el
+     de la lista llevado al 100 % (lista ÷ 0,70). Es una referencia, no un
+     precio publicado por Pampacryl.
    · IVA: la lista viene sin IVA; al público se muestra con IVA incluido.
 
    El "rendimiento de obra" NO es el de la ficha: la ficha se mide en
@@ -17,7 +21,8 @@
    comprar (mismo criterio que la calculadora de bolt.com.ar/calculadora).
    ─────────────────────────────────────────────────────────────────────────── */
 window.PAMPACRYL = {
-  DESCUENTO_BOLT: 0.30,
+  DESCUENTO_BOLT: 0.30,               // lo que el cliente de BOLT paga de menos que en pinturería
+  LISTA_YA_CON_DESCUENTO: true,       // true = la lista ES el precio BOLT (no se descuenta de nuevo)
   IVA: 0.21,
   PRECIOS_INCLUYEN_IVA: false,       // la lista 08/26 dice "Los precios No incluyen IVA"
   FACTOR_OBRA: 0.55,                 // ficha × 0,55 = lo que rinde de verdad en obra
@@ -297,6 +302,9 @@ window.PAMPACRYL = {
   ],
 
   // Las fotos donde se prueba el color: la máscara dice qué parte es pared.
+  // Accesorios y herramientas (accesorios.js): se agrupan así en la página.
+  gruposAccesorios: ["Rodillos", "Pinceles", "Kits para pintar", "Bandejas y cubetas", "Extensores, altura y traslado", "Espátulas y llanas", "Lijas", "Para preparar y mezclar", "Cubrir y enmascarar", "Vendas, mallas y membranas", "Guantes y protección"],
+
   fotos: [
     { id: "frente",     nombre: "El frente",   src: "fotos/frente.jpg",     mascara: "fotos/frente-mascara.png",     w: 1200, h: 660 },
     { id: "living",     nombre: "El living",   src: "fotos/living.jpg",     mascara: "fotos/living-mascara.png",     w: 1200, h: 782 },

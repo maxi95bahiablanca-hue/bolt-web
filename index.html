@@ -259,6 +259,17 @@
 
   /* ── Secciones ───────────────────────────────────────────────────────── */
   section{padding:110px 0;position:relative}
+  /* aliados */
+  .aliados-sec{padding-top:40px}
+  .aliado-card{display:flex;align-items:center;gap:26px;margin-top:34px;padding:22px 28px;border-radius:26px;
+    border:1px solid var(--bord);background:var(--surf);transition:border-color .25s,transform .25s;max-width:820px}
+  .aliado-card:hover{border-color:var(--bord2);transform:translateY(-2px)}
+  .aliado-card img{height:52px;width:auto;flex:none}
+  .aliado-card .txt{flex:1;min-width:0;line-height:1.35}
+  .aliado-card .txt b{display:block;font-weight:600;font-size:1.05rem;letter-spacing:-.01em}
+  .aliado-card .txt small{color:var(--tx2);font-size:.9rem;display:block;margin-top:3px}
+  .aliado-card .ir{color:var(--y);font-size:.92rem;font-weight:550;white-space:nowrap}
+  @media (max-width:640px){.aliado-card{flex-direction:column;align-items:flex-start;gap:14px;padding:20px} .aliado-card img{height:40px}}
   @media(max-width:700px){ section{padding:76px 0} }
 
   /* Oficios */
@@ -610,6 +621,23 @@
         <span><b style="font-weight:550">Tu casa</b><small>Código en la puerta: 4821</small></span>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ── Aliados ──────────────────────────────────────────────────────── -->
+<section id="aliados" class="aliados-sec">
+  <div class="wrap">
+    <div class="rotulo rev ab">Aliados</div>
+    <h2 class="rev ab">Con la <em class="y">fábrica</em> de Bahía.</h2>
+    <p class="bajada rev ab">Pampacryl fabrica pinturas en Bahía Blanca. Los clientes de BOLT compran
+       con <b style="color:var(--tx);font-weight:550">30% de descuento</b>, prueban el color en una casa de verdad
+       y arman el pedido desde acá.</p>
+    <a class="aliado-card rev esc" href="/pinturas/">
+      <img src="/pinturas/pampacryl-oscuro.png" alt="Pampacryl Pinturas" width="900" height="370" loading="lazy">
+      <span class="txt"><b>Pinturas Pampacryl · 30% menos</b>
+        <small>Látex, esmaltes, impermeabilizantes y texturados. Sarmiento 1226, Bahía Blanca.</small></span>
+      <span class="ir">Ver la carta de colores →</span>
+    </a>
   </div>
 </section>
 
