@@ -307,7 +307,7 @@ window.PAMPACRYL = {
 
   fotos: [
     { id: "frente",     nombre: "El frente",   src: "fotos/frente.jpg",     mascara: "fotos/frente-mascara.png",     w: 1200, h: 660 },
-    { id: "living",     nombre: "El living",   src: "fotos/living.jpg",     mascara: "fotos/living-mascara.png",     w: 1200, h: 782 },
-    { id: "dormitorio", nombre: "El dormitorio", src: "fotos/dormitorio.jpg", mascara: "fotos/dormitorio-mascara.png", w: 1200, h: 799 },
+    { id: "living",     nombre: "El living",   src: "fotos/living.jpg",     mascara: "fotos/living-mascara.png",     w: 1200, h: 674 },
+    { id: "dormitorio", nombre: "El dormitorio", src: "fotos/dormitorio.jpg", mascara: "fotos/dormitorio-mascara.png", w: 1200, h: 798 },
   ],
 };
