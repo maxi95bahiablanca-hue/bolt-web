@@ -1639,6 +1639,12 @@ async function pedir(){
     $('errDatos').textContent = 'Falta decir a quién necesitás.';
     ir(2); elegirOficio(); return;
   }
+  // 🔴 Sin ubicación no se puede buscar (auditoría 23-ago): antes pedir() no la
+  //    validaba y, al volver de Google, un pedido podía salir con lat/lng vacíos.
+  if (!S.lat || !S.lng){
+    $('errUbic') ? ($('errUbic').textContent = 'Falta decirnos dónde es.') : 0;
+    ir(3); return;
+  }
 
   btn.disabled = true; btn.textContent = 'Buscando…';
   try {
@@ -2147,7 +2153,9 @@ function verificarCodigo(){
  *  a nadie: el pedido actual queda igual, se abre uno nuevo desde cero. */
 function pedirOtro(){
   try { localStorage.removeItem('bolt_job'); } catch (e) {}
-  location.href = location.pathname;
+  // ?nuevo=1 (auditoría 23-ago): sin la marca, al recargar el recuperador de más
+  // abajo volvía a mostrar el trabajo viejo desde la base y no se podía pedir otro.
+  location.href = location.pathname + '?nuevo=1';
 }
 
 async function cancelarTrabajo(){
@@ -2297,6 +2305,9 @@ const CAMPOS_JOB = 'id,status,address,notes,verification_code,scheduled_for,sche
 (async () => {
   const u = await usuarioActual();
   if (!u) return;
+  // 🔴 Si tocó "+ Nuevo pedido" (?nuevo=1, auditoría 23-ago), no re-mostrar el
+  //    trabajo viejo: dejarlo pedir uno nuevo.
+  if (new URLSearchParams(location.search).has('nuevo')) return;
   // Cualquier trabajo mío que siga vivo, venga de donde venga. Los que están
   // esperando respuesta (pending) no se muestran acá: esos viven en la pantalla
   // de búsqueda y se resuelven solos o caen en el rescate.
