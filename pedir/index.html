@@ -1067,11 +1067,21 @@ function reintentarAnalisis(){
   analizar(S.resumen || $('txtProblema').value.trim());
 }
 
+// Tope de tiempo para promesas que se pueden colgar (wifi cautivo, 3G que
+// "acepta y no contesta"): a los ms, rechaza y deja que el catch actúe.
+function conTiempo(promesa, ms){
+  return Promise.race([
+    promesa,
+    new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)),
+  ]);
+}
+
 async function analizar(mensaje){
   S.resumen = mensaje;
   $('errChat').textContent = '';
   try {
-    const { data, error } = await sb.functions.invoke('analyze-problem', { body: { message: mensaje } });
+    const { data, error } = await conTiempo(
+      sb.functions.invoke('analyze-problem', { body: { message: mensaje } }), 15000);
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
 
@@ -1299,7 +1309,7 @@ function usarGPS(){
     S.lat = pos.coords.latitude; S.lng = pos.coords.longitude;
     $('txtDir').value = 'Mi ubicación actual';
     try {
-      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${S.lat}&lon=${S.lng}`);
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${S.lat}&lon=${S.lng}`, { signal: AbortSignal.timeout(5000) });
       const j = await r.json();
       const a = j.address || {};
       const calle = [a.road, a.house_number].filter(Boolean).join(' ');
@@ -1343,7 +1353,7 @@ async function confirmarUbic(){
   // dirección sin altura cae en cualquier lado si no se limita.
   try {
     const q = encodeURIComponent(dir + ', Bahía Blanca, Argentina');
-    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}`);
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}`, { signal: AbortSignal.timeout(8000) });
     const j = await r.json();
     if (!j.length){ $('errUbic').textContent = 'No encontramos esa dirección. Probá con calle y número.'; return; }
     S.lat = Number(j[0].lat); S.lng = Number(j[0].lon); S.direccion = dir;
@@ -1591,6 +1601,12 @@ async function salir(){
   await sb.auth.signOut();
   $('txtNombre').value = ''; $('txtTel').value = '';
   S.userId = null;
+  // Al salir hay que borrar TODO el pedido anterior: si no, el próximo que use
+  // este navegador (kiosko / compartido) hereda el trabajo, la burbuja de
+  // seguimiento (depende de S.job) y los canales de realtime del anterior.
+  S.job = null; S.profesional = null;
+  clearInterval(S.timer); clearInterval(S.poll);
+  try { sb.removeAllChannels(); } catch (e) {}
   ir(0);
 }
 
@@ -1716,6 +1732,9 @@ async function pedir(){
 
     escucharRespuestas();
   } catch (e) {
+    // Si el insert falló, el reloj de un intento anterior podía seguir vivo y
+    // disparar sinNadie() sobre una pantalla ya oculta. Lo cortamos.
+    clearInterval(S.timer);
     btn.disabled = false; btn.textContent = 'Buscar profesionales';
     ir(4);
     $('errDatos').textContent = 'No pudimos crear el pedido: ' + (e.message || 'error');
@@ -1724,6 +1743,11 @@ async function pedir(){
 
 // ── 5: esperar respuestas ───────────────────────────────────────────────
 function arrancarReloj(){
+  // Un segundo intento tras un fracaso arranca con la pantalla de búsqueda tal
+  // como la dejó sinNadie() (cartel de "no encontramos a nadie" visible). Hay
+  // que restaurarla o el cliente ve el fracaso viejo mientras vuelve a buscar.
+  $('sinRespuesta').style.display = 'none';
+  $('cajaBuscando').style.display = 'block';
   const fin = Date.now() + ESPERA_MS;
   clearInterval(S.timer);
   S.turnoVence = Date.now() + SEG_POR_TURNO * 1000;   // turno del profesional actual

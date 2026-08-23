@@ -1449,7 +1449,10 @@
         body: { token: TOKEN, acepta: acepta },
       });
       if (r.error) throw r.error;
-      ok = true;
+      // La funcion avisa con cambio:false cuando el presupuesto ya estaba
+      // respondido (o volvio a borrador): no cambio nada, no hay a quien avisar.
+      // Se trata igual que el "false" de la RPC: se muestra tal cual esta.
+      ok = (r.data && r.data.cambio === false) ? false : true;
     } catch (e) {
       try {
         var r2 = await sb.rpc('responder_presupuesto', { p_token: TOKEN, p_acepta: acepta });

@@ -441,7 +441,7 @@ async function cargarFotos(){
 async function moderarFoto(id, estado){
   const { error } = await sb.from('professional_photos').update({ estado }).eq('id', id);
   if (error) return aviso('No se pudo: ' + error.message, 'bad');
-  aviso(estado === 'aprobada' ? 'Publicada <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.6 4.4 4.4L19 7.4"/></svg>' : 'Bajada');
+  aviso(estado === 'aprobada' ? 'Publicada ✓' : 'Bajada');
   cargarFotos();
 }
 
@@ -630,7 +630,6 @@ function pintarAlertas(){
   // Cada persona con su botón de WhatsApp y el mensaje ya escrito: la alerta
   // sin la acción al lado es una alerta que no se resuelve (Maxi, 1-ago).
   $('alertas').innerHTML = bloques.length ? bloques.map(b => `
-  pintarCuentaAvisos(document.querySelectorAll('#alertas .alerta').length);
     <div class="alerta ${b.tono === 'grave' ? 'grave' : ''}">
       <div class="alerta-tit">${b.tono === 'grave' ? '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.6v5"/><circle cx="12" cy="16.2" r=".95" fill="currentColor" stroke="none"/></svg>' : '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4.6"/><circle cx="12" cy="17" r=".95" fill="currentColor" stroke="none"/><path d="M10.3 4.6 2.8 17.8a1.9 1.9 0 0 0 1.7 2.9h15a1.9 1.9 0 0 0 1.7-2.9L13.7 4.6a1.9 1.9 0 0 0-3.4 0z"/></svg>'} ${esc(b.titulo)}</div>
       <div class="alerta-txt">${esc(b.texto)}</div>
@@ -651,6 +650,7 @@ function pintarAlertas(){
       </div>
       <div class="alerta-txt" style="margin-top:8px;opacity:.8">→ ${esc(b.quehacer)}</div>
     </div>`).join('') : '';
+  pintarCuentaAvisos(bloques.length);
 }
 
 function pintarKpis(){
@@ -1096,7 +1096,7 @@ async function pedirDatos(id){
   if (!l.token){ aviso('Ese prestador no tiene link personal todavía.', 'bad'); return; }
   if (!confirm(`¿Mandarle a ${l.nombre} el mail pidiéndole los datos que faltan?\n\nSale de soporte@bolt.com.ar`)) return;
   const { error } = await sb.functions.invoke('notify-datos-pendientes', { body: { token: l.token } });
-  aviso(error ? 'No se pudo enviar: ' + error.message : 'Mail enviado desde soporte@bolt.com.ar <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.6 4.4 4.4L19 7.4"/></svg>', error ? 'bad' : 'ok');
+  aviso(error ? 'No se pudo enviar: ' + error.message : 'Mail enviado desde soporte@bolt.com.ar ✓', error ? 'bad' : 'ok');
 }
 
 async function verDocs(id){
@@ -1161,10 +1161,24 @@ async function asignarOtro(jobId){
   if (e2) return aviso('No se pudo: ' + e2.message, 'bad');
   if (data !== 'reasignado') return aviso(String(data), 'bad');
   const { data: nu } = await sb.from('professionals').select('user_id').eq('id', nuevo.id).single();
-  if (nu?.user_id) sb.functions.invoke('send-push', { body: {
-    userId: nu.user_id, title: '⚡ Te asignamos un trabajo',
-    body: 'Un trabajo pasó a vos. Abrilo en BOLT para ver los detalles.',
-    data: { jobId, screen: 'tracking' } } }).catch(() => {});
+  if (nu?.user_id){
+    try {
+      const { data: resp, error: ep } = await sb.functions.invoke('send-push', { body: {
+        userId: nu.user_id, title: '⚡ Te asignamos un trabajo',
+        body: 'Un trabajo pasó a vos. Abrilo en BOLT para ver los detalles.',
+        data: { jobId, screen: 'tracking' } } });
+      if (ep || (resp && resp.sent === false)){
+        aviso(`Pasó a ${nuevo.nombre}, pero NO le llegó el aviso. Llamalo.`, 'bad');
+        cargarTrabados(); return;
+      }
+    } catch (e) {
+      aviso(`Pasó a ${nuevo.nombre}, pero NO le llegó el aviso. Llamalo.`, 'bad');
+      cargarTrabados(); return;
+    }
+  } else {
+    aviso(`Pasó a ${nuevo.nombre}, pero no tiene la app: llamalo.`, 'bad');
+    cargarTrabados(); return;
+  }
   aviso(`Listo: ahora es de ${nuevo.nombre}`);
   cargarTrabados();
 }
@@ -1193,7 +1207,7 @@ async function editar(id){
   if (!Object.keys(nuevo).length) return aviso('No cambiaste nada.');
   const { error } = await sb.from('prestador_leads').update(nuevo).eq('id', id);
   if (error) return aviso('No se pudo guardar: ' + error.message, 'bad');
-  aviso('Datos guardados <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.6 4.4 4.4L19 7.4"/></svg>'); await cargarLeads(); render();
+  aviso('Datos guardados ✓'); await cargarLeads(); render();
 }
 
 async function rechazar(id){

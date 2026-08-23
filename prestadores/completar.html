@@ -230,7 +230,10 @@
         cont.appendChild(box);
         const inp = box.querySelector('input');
         inp.onchange = () => {
-          if (inp.files[0]) { const u = document.getElementById('u_' + it.key); u.classList.add('has'); u.querySelector('.utext').textContent = '✓ Listo'; }
+          // OJO: acá el archivo sólo está ELEGIDO, todavía no subió (eso pasa en
+          // guardar()). Decir "✓ Listo" antes de subir mentía: si la subida
+          // fallaba, el cajón quedaba en verde y el dato se perdía en silencio.
+          if (inp.files[0]) { const u = document.getElementById('u_' + it.key); u.classList.add('has'); u.querySelector('.utext').textContent = '📎 Archivo elegido (se sube al guardar)'; }
         };
       } else {
         box.innerHTML = `<label><span class="falta-badge">TE FALTA</span>${esc(it.label)}</label>
@@ -285,12 +288,29 @@
     msg.style.color = 'var(--muted)'; msg.textContent = 'Subiendo tus datos…';
 
     const datos = {};
+    const falloSubida = [];
     for (const it of FALTAN) {
       const r = RENDER[it.key];
       if (!r) continue;
       if (r.tipo === 'chips') { if (selectedProfs.length) datos.profesion = selectedProfs.join(', '); }
-      else if (r.tipo === 'file') { const p = await uploadKey(it.key); if (p) datos[it.key] = p; }
+      else if (r.tipo === 'file') {
+        const inp = document.getElementById('f_' + it.key);
+        if (inp && inp.files[0]) {
+          const p = await uploadKey(it.key);
+          if (p) datos[it.key] = p; else falloSubida.push(it.label);
+        }
+      }
       else { const v = (document.getElementById('c_' + it.key)?.value || '').trim(); if (v) datos[it.key] = v; }
+    }
+
+    // Una subida que falló NO se saltea en silencio: antes el cajón quedaba en
+    // verde y el mensaje final decía "guardado, falta 1" sin nombrar el dato
+    // perdido. Cortamos acá y lo decimos con nombre y apellido.
+    if (falloSubida.length) {
+      btn.disabled = false; btn.textContent = 'Guardar mis datos';
+      msg.style.color = 'var(--red)';
+      msg.textContent = 'No se pudo subir: ' + falloSubida.join(', ') + '. Revisá tu conexión y probá de nuevo.';
+      return;
     }
 
     if (!Object.keys(datos).length) {
