@@ -819,7 +819,7 @@ const ESPERA_MS  = 3 * 60 * 1000;          // 3 minutos, como la app
 //   'cascada' → va a UNO por vez; si no contesta en SEG_POR_TURNO, al siguiente
 //   'subasta' → a varios a la vez y el cliente elige (lo de antes del 1-ago)
 const MODO_ASIGNACION = 'cascada';
-const SEG_POR_TURNO   = 90;
+const SEG_POR_TURNO   = 180;  // 3 min (decisión de Maxi 23-ago): coincide con lo que el push promete
 const MAX_INTENTOS    = 5;
 const RADIO_LIMITE = 10;                   // cuántos profesionales avisamos
 
@@ -1724,7 +1724,7 @@ async function pedir(){
         body: {
           userId: w.user_id,
           title: '⚡ Nueva solicitud de trabajo',
-          body: `${S.oficio || 'Servicio'} cerca tuyo. Entrá a responder cuanto antes.`,
+          body: `${S.oficio || 'Servicio'} cerca tuyo. Tenés 3 minutos para responder.`,
           data: { jobId: j.id, screen: 'worker_incoming' },
         },
       });
@@ -1792,7 +1792,7 @@ async function pasarAlSiguiente(){
       `Buscando… le estamos preguntando a ${fila.nombre || 'otro profesional'}.`);
     sb.functions.invoke('send-push', {
       body: { userId: fila.user_id, title: '⚡ Nueva solicitud de trabajo',
-              body: `${S.oficio || 'Servicio'} cerca tuyo. Entrá a responder cuanto antes.`,
+              body: `${S.oficio || 'Servicio'} cerca tuyo. Tenés 3 minutos para responder.`,
               data: { jobId: job.id, screen: 'worker_incoming' } },
     }).catch(() => {});
     if (S.intentos >= MAX_INTENTOS) S.turnoVence = Date.now() + 999999;   // no insistir para siempre
