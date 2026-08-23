@@ -1702,7 +1702,7 @@ async function pedir(){
         body: {
           userId: w.user_id,
           title: '⚡ Nueva solicitud de trabajo',
-          body: `${S.oficio || 'Servicio'} cerca tuyo. Tenés 3 minutos para responder.`,
+          body: `${S.oficio || 'Servicio'} cerca tuyo. Entrá a responder cuanto antes.`,
           data: { jobId: j.id, screen: 'worker_incoming' },
         },
       });
@@ -1762,7 +1762,7 @@ async function pasarAlSiguiente(){
       `Buscando… le estamos preguntando a ${fila.nombre || 'otro profesional'}.`);
     sb.functions.invoke('send-push', {
       body: { userId: fila.user_id, title: '⚡ Nueva solicitud de trabajo',
-              body: `${S.oficio || 'Servicio'} cerca tuyo. Tenés 3 minutos para responder.`,
+              body: `${S.oficio || 'Servicio'} cerca tuyo. Entrá a responder cuanto antes.`,
               data: { jobId: job.id, screen: 'worker_incoming' } },
     }).catch(() => {});
     if (S.intentos >= MAX_INTENTOS) S.turnoVence = Date.now() + 999999;   // no insistir para siempre
@@ -1925,7 +1925,16 @@ function leerPunto(v){
 }
 
 function pintarProfesional(pt){
-  if (!pt || !MAPA) return;
+  if (!MAPA) return;
+  // 🔴 Ventana de ubicación (migración 054, auditoría 23-ago): el cliente ve al
+  //    profesional SÓLO mientras va en camino, no todo el día ni mientras trabaja
+  //    adentro de la casa. Fuera de esa ventana, ocultar el marcador.
+  const j = S.job || {};
+  const enCamino = j.status === 'accepted' && !!j.on_the_way_at;
+  if (!pt || !enCamino) {
+    if (MARCA_PRO) { MAPA.removeLayer(MARCA_PRO); MARCA_PRO = null; }
+    return;
+  }
   const icono = L.divIcon({ className: '', iconSize: [34,34], iconAnchor: [17,17],
     html: `<div style="width:34px;height:34px;border-radius:50%;background:#00D68F;display:grid;place-items:center;font-size:16px;box-shadow:0 0 0 4px rgba(0,214,143,.2)">🔧</div>` });
   if (MARCA_PRO) MARCA_PRO.setLatLng([pt.lat, pt.lng]);
@@ -2037,6 +2046,11 @@ function pintarPasos(estado){
   //  cómo le fue. Nada que esperar, nada que mirar.
   const j = S.job || {};
   const pro = j.professionals || {};
+  // 🔴 Ventana de ubicación (054): apenas el trabajo deja de estar "en camino"
+  //    (llegó, empezó, terminó), sacar al profesional del mapa (auditoría 23-ago).
+  if (MAPA && MARCA_PRO && !(estado === 'accepted' && j.on_the_way_at)) {
+    MAPA.removeLayer(MARCA_PRO); MARCA_PRO = null;
+  }
   const hayPro = !!pro.id && ['accepted', 'arrived', 'in_progress'].includes(estado);
   if (hayPro){
     // wa.me quiere el número limpio y con característica. En la base están

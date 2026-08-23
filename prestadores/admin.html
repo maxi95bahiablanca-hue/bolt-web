@@ -1038,9 +1038,9 @@ function telefonoDe(p){
 // persona, no como una notificación del sistema: son gente que se anotó, no
 // usuarios que hay que "activar".
 const MENSAJES = {
-  oficio: (n) => `Hola ${n}! Soy Maxi de BOLT <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 2.6 4.8 13.4h6L9.9 21.4l8.6-11h-6.2z"/></svg> Te tengo aprobado pero me falta un dato para que te lleguen los trabajos: ¿qué oficio hacés? Con eso te dejo listo.`,
-  radar:  (n) => `Hola ${n}! Soy Maxi de BOLT <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 2.6 4.8 13.4h6L9.9 21.4l8.6-11h-6.2z"/></svg> Ya estás aprobado y listo para recibir trabajos. Sólo falta un paso: abrí la app y prendé el radar (el botón grande de la pantalla principal). Mientras esté apagado no te llega nada, aunque haya pedidos de tu oficio cerca.`,
-  avisos: (n) => `Hola ${n}! Soy Maxi de BOLT <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 2.6 4.8 13.4h6L9.9 21.4l8.6-11h-6.2z"/></svg> Una cosita: la app no tiene permiso para mandarte notificaciones, así que no te vas a enterar cuando entre un trabajo. Entrá a la app y aceptá los avisos cuando te lo pida (o desde Ajustes del teléfono).`,
+  oficio: (n) => `Hola ${n}! Soy Maxi de BOLT ⚡ Te tengo aprobado pero me falta un dato para que te lleguen los trabajos: ¿qué oficio hacés? Con eso te dejo listo.`,
+  radar:  (n) => `Hola ${n}! Soy Maxi de BOLT ⚡ Ya estás aprobado y listo para recibir trabajos. Sólo falta un paso: abrí la app y prendé el radar (el botón grande de la pantalla principal). Mientras esté apagado no te llega nada, aunque haya pedidos de tu oficio cerca.`,
+  avisos: (n) => `Hola ${n}! Soy Maxi de BOLT ⚡ Una cosita: la app no tiene permiso para mandarte notificaciones, así que no te vas a enterar cuando entre un trabajo. Entrá a la app y aceptá los avisos cuando te lo pida (o desde Ajustes del teléfono).`,
 };
 
 /** Abre WhatsApp con el mensaje según lo que le falta a esa persona. */
@@ -1054,7 +1054,7 @@ function avisar(tel, nombre, motivo){
 function wa(tel, nombre){
   const n = String(tel).replace(/\D/g, '');
   const full = n.startsWith('54') ? n : ('549' + n.slice(-10));
-  const msj = `Hola ${nombre}! Te escribo de BOLT <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 2.6 4.8 13.4h6L9.9 21.4l8.6-11h-6.2z"/></svg>`;
+  const msj = `Hola ${nombre}! Te escribo de BOLT ⚡`;
   window.open('https://wa.me/' + full + '?text=' + encodeURIComponent(msj), '_blank');
 }
 
@@ -1063,9 +1063,29 @@ async function aceptar(id){
   if (!confirm(`¿Aceptar a ${l.nombre} ${l.apellido || ''} y avisarle por mail?`)) return;
   const { error } = await sb.from('prestador_leads').update({ estado: 'aceptado' }).eq('id', id);
   if (error) return aviso('No se pudo aceptar: ' + error.message, 'bad');
+
+  // 🔴 APROBAR DE VERDAD (auditoría 23-ago). Antes esto sólo marcaba el lead como
+  //    'aceptado' y mandaba el mail "fuiste aceptado", pero la ficha del
+  //    profesional en la app quedaba 'pending' e invisible PARA SIEMPRE: no había
+  //    ningún botón en el panel que la aprobara. Cada prestador aceptado se perdía.
+  //    Ahora, si el lead está vinculado a una cuenta, se aprueba la ficha; el mail
+  //    sale sólo si la aprobación no falló.
+  let extra = '';
+  if (l.user_id) {
+    const { data: ficha, error: eF } = await sb.from('professionals')
+      .update({ verification_status: 'approved' })
+      .eq('user_id', l.user_id)
+      .select('id, professional_professions(profession_id)');
+    if (eF) return aviso('Se marcó el lead pero NO se pudo aprobar la ficha: ' + eF.message, 'bad');
+    if (!ficha || !ficha.length)                              extra = ' — todavía sin ficha en la app: se aprueba sola cuando entre y complete el registro';
+    else if (!(ficha[0].professional_professions || []).length) extra = ' — ⚠️ SIN OFICIO cargado: no va a recibir trabajos hasta que agregue uno';
+  } else {
+    extra = ' — se activa cuando la persona entre a la app con este mail/teléfono';
+  }
+
   // El mail sale de soporte@bolt.com.ar por Resend, NO del Gmail personal.
   const { error: e2 } = await sb.functions.invoke('notify-lead-accepted', { body: { leadId: id } });
-  aviso(e2 ? 'Aceptado, pero el mail no salió: ' + e2.message : 'Aceptado y avisado por mail <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.6 4.4 4.4L19 7.4"/></svg>', e2 ? 'bad' : 'ok');
+  aviso(e2 ? 'Aprobado, pero el mail no salió: ' + e2.message : 'Aprobado y avisado por mail ✓' + extra, e2 ? 'bad' : 'ok');
   await cargarLeads(); render(); pintarKpis();
 }
 
@@ -1120,7 +1140,7 @@ async function preguntarAlTrabajador(jobId, userId, motivo){
   // aviso que no salió NO se informa como enviado: hay alguien esperando.
   try {
     const { data: resp, error } = await sb.functions.invoke('send-push', {
-      body: { userId, title: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 2.6 4.8 13.4h6L9.9 21.4l8.6-11h-6.2z"/></svg> BOLT te pregunta', body: m.pregunta, data: { jobId, screen: 'tracking' } } });
+      body: { userId, title: '⚡ BOLT te pregunta', body: m.pregunta, data: { jobId, screen: 'tracking' } } });
     if (error) return aviso('No se pudo avisar: ' + (error.message || 'error de la función'), 'bad');
     if (resp && resp.sent === false) return aviso('NO le llegó: ' + (resp.reason || 'el push no salió') + '. Llamalo.', 'bad');
     aviso('Listo, le preguntamos. Si no contesta sigue apareciendo acá.');
@@ -1142,7 +1162,7 @@ async function asignarOtro(jobId){
   if (data !== 'reasignado') return aviso(String(data), 'bad');
   const { data: nu } = await sb.from('professionals').select('user_id').eq('id', nuevo.id).single();
   if (nu?.user_id) sb.functions.invoke('send-push', { body: {
-    userId: nu.user_id, title: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 2.6 4.8 13.4h6L9.9 21.4l8.6-11h-6.2z"/></svg> Te asignamos un trabajo',
+    userId: nu.user_id, title: '⚡ Te asignamos un trabajo',
     body: 'Un trabajo pasó a vos. Abrilo en BOLT para ver los detalles.',
     data: { jobId, screen: 'tracking' } } }).catch(() => {});
   aviso(`Listo: ahora es de ${nuevo.nombre}`);

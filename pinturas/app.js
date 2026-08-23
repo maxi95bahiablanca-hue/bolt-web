@@ -259,8 +259,8 @@
     var q = $("#buscaAcc");
     if (q) q.addEventListener("input", function () {
       var t = normal(q.value).trim();
-      $(".acc", cont).forEach(function (r) { r.style.display = !t || normal($(".n", r).textContent).indexOf(t) >= 0 ? "" : "none"; });
-      $(".acc-grupo", cont).forEach(function (dg) { var vis = $(".acc", dg).some(function (r) { return r.style.display !== "none"; }); dg.style.display = vis ? "" : "none"; if (t) dg.open = true; });
+      $$(".acc", cont).forEach(function (r) { r.style.display = !t || normal($(".n", r).textContent).indexOf(t) >= 0 ? "" : "none"; });
+      $$(".acc-grupo", cont).forEach(function (dg) { var vis = $$(".acc", dg).some(function (r) { return r.style.display !== "none"; }); dg.style.display = vis ? "" : "none"; if (t) dg.open = true; });
     });
   }
 
